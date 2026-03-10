@@ -1,6 +1,8 @@
 # Marrakech
 
-火星開発をテーマにした、Marrakech風ボードゲームのHTMLプロトタイプです。
+火星開発をテーマにした、Marrakech風ボードゲームのHTMLデモです。
+
+向き変更 → 移動 → 隣接配置の1ターンを実際に操作できます。
 
 ## GitHub Pages
 

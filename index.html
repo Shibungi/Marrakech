@@ -18,9 +18,7 @@
         --city: #d07171;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
@@ -45,24 +43,10 @@
         padding: 1rem;
       }
 
-      h1, h2, h3 {
-        margin: 0 0 0.75rem;
-      }
-
-      h1 {
-        font-size: 1.15rem;
-      }
-
-      h2 {
-        font-size: 1rem;
-        color: var(--accent);
-      }
-
-      p {
-        margin: 0.35rem 0;
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
+      h1, h2, h3 { margin: 0 0 0.75rem; }
+      h1 { font-size: 1.15rem; }
+      h2 { font-size: 1rem; color: var(--accent); }
+      p { margin: 0.35rem 0; color: var(--muted); font-size: 0.92rem; }
 
       .legend {
         display: grid;
@@ -83,10 +67,7 @@
       .city { background: var(--city); }
       .assam { background: #ffffff; }
 
-      .hud {
-        display: grid;
-        gap: 0.65rem;
-      }
+      .hud { display: grid; gap: 0.65rem; }
 
       .stat {
         padding: 0.65rem;
@@ -95,15 +76,8 @@
         border: 1px solid #243062;
       }
 
-      .value {
-        display: block;
-        margin-top: 0.2rem;
-        font-weight: 700;
-      }
-
-      .money {
-        color: var(--money);
-      }
+      .value { display: block; margin-top: 0.2rem; font-weight: 700; }
+      .money { color: var(--money); }
 
       .board-wrap {
         background: linear-gradient(180deg, #192146, #101636);
@@ -112,17 +86,8 @@
         padding: 1rem;
       }
 
-      .board {
-        display: grid;
-        gap: 0.15rem;
-        justify-content: center;
-      }
-
-      .row {
-        display: flex;
-        gap: 0.15rem;
-        margin-left: var(--offset, 0px);
-      }
+      .board { display: grid; gap: 0.15rem; justify-content: center; }
+      .row { display: flex; gap: 0.15rem; margin-left: var(--offset, 0px); }
 
       .hex {
         width: 64px;
@@ -155,10 +120,12 @@
         outline-offset: -3px;
       }
 
-      .controls {
-        display: grid;
-        gap: 0.5rem;
+      .hex.placeable {
+        box-shadow: inset 0 0 0 3px #ffe996;
+        cursor: pointer;
       }
+
+      .controls { display: grid; gap: 0.5rem; }
 
       .btn {
         border: 1px solid #3554a6;
@@ -170,9 +137,7 @@
         font-weight: 600;
       }
 
-      .btn:disabled {
-        opacity: 0.45;
-      }
+      .btn:disabled { opacity: 0.45; }
 
       .log {
         max-height: 160px;
@@ -183,26 +148,20 @@
         background: #0c1129;
       }
 
-      .log li {
-        margin: 0.25rem 0;
-        color: #c4cffc;
-        font-size: 0.84rem;
-      }
+      .log li { margin: 0.25rem 0; color: #c4cffc; font-size: 0.84rem; }
 
       @media (max-width: 1024px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
+        .layout { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
     <main class="layout">
       <section class="panel">
-        <h1>火星開発ボードゲーム（HTMLガワ）</h1>
+        <h1>火星開発ボードゲーム（プレイ可能デモ）</h1>
         <p>
-          プレイヤーは火星開発企業。六角形マップに地形（海・山・都市）を配置し、
-          アッサムの移動先に応じて支払いが発生します。
+          プレイヤーは火星開発企業。向き変更→アッサム移動→隣接マス配置の
+          手番フローを、ブラウザだけで実際に操作できます。
         </p>
 
         <h2>地形タイプ</h2>
@@ -213,11 +172,10 @@
           <span class="chip assam"></span><span>アッサム（駒）</span>
         </div>
 
-        <h2 style="margin-top: 1rem">実装予定</h2>
-        <p>・向き変更 → アッサム移動 → 隣接マスへ地形配置の手番フロー</p>
-        <p>・着地時の隣接同タイプ連結数で支払い計算</p>
-        <p>・所持金＋盤面価値で最終勝者判定</p>
-        <p>・将来的な複数ブラウザ同時プレイ（サーバー同期）</p>
+        <h2 style="margin-top: 1rem">ルール（簡易）</h2>
+        <p>・着地した地形が他プレイヤー所有なら連結数ぶん支払い</p>
+        <p>・支払額 = 連結している同タイプ地形の枚数</p>
+        <p>・配置時はアッサム隣接の空きマスのみ選択可能</p>
       </section>
 
       <section class="board-wrap">
@@ -228,82 +186,261 @@
       <section class="panel">
         <h2>ゲームHUD</h2>
         <div class="hud">
-          <div class="stat">
-            現在手番
-            <span class="value">プレイヤーA</span>
-          </div>
-          <div class="stat">
-            アッサムの向き
-            <span class="value">北東（仮）</span>
-          </div>
-          <div class="stat">
-            所持金
-            <span class="value money">A: 30 / B: 30 / C: 30</span>
-          </div>
+          <div class="stat">現在手番<span id="turnPlayer" class="value">-</span></div>
+          <div class="stat">アッサムの向き<span id="direction" class="value">-</span></div>
+          <div class="stat">フェーズ<span id="phase" class="value">-</span></div>
+          <div class="stat">所持金<span id="money" class="value money">-</span></div>
+          <div class="stat">配置地形<span id="terrainToPlace" class="value">-</span></div>
         </div>
 
-        <h3 style="margin-top: 1rem">操作（デモ）</h3>
+        <h3 style="margin-top: 1rem">操作</h3>
         <div class="controls">
-          <button class="btn" type="button">↺ 向きを変更</button>
-          <button class="btn" type="button">⇢ アッサムを移動</button>
-          <button class="btn" type="button">＋ 隣接マスへ地形配置</button>
-          <button class="btn" type="button" disabled>⏭ 手番終了（未実装）</button>
+          <button id="rotateBtn" class="btn" type="button">↺ 向きを変更</button>
+          <button id="moveBtn" class="btn" type="button">⇢ アッサムを移動</button>
+          <button id="placeBtn" class="btn" type="button">＋ 隣接マスへ地形配置</button>
+          <button id="endBtn" class="btn" type="button">⏭ 手番終了</button>
         </div>
 
-        <h3 style="margin-top: 1rem">イベントログ（サンプル）</h3>
-        <ul class="log">
-          <li>Turn 1: プレイヤーAがアッサムの向きを北東へ変更</li>
-          <li>Turn 1: アッサムが(4,3)の海マスに着地</li>
-          <li>Turn 1: 海の連結数2 → プレイヤーBへ2クレジット支払い</li>
-          <li>Turn 1: プレイヤーAが隣接マスに都市を配置</li>
-        </ul>
+        <h3 style="margin-top: 1rem">イベントログ</h3>
+        <ul id="log" class="log"></ul>
       </section>
     </main>
 
     <script>
-      const template = [
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0]
+      const rows = [6, 7, 8, 7, 6];
+      const terrainCycle = ["sea", "mountain", "city"];
+      const players = ["A", "B", "C"];
+      const directions = [
+        { name: "東", delta: [1, 0] },
+        { name: "北東", delta: [0, -1] },
+        { name: "北西", delta: [-1, -1] },
+        { name: "西", delta: [-1, 0] },
+        { name: "南西", delta: [0, 1] },
+        { name: "南東", delta: [1, 1] }
       ];
 
-      const seededTiles = new Map([
-        ["1-2", { type: "sea", owner: "B" }],
-        ["2-3", { type: "sea", owner: "B" }],
-        ["2-4", { type: "city", owner: "A" }],
-        ["3-2", { type: "mountain", owner: "C" }]
-      ]);
+      const board = [];
+      let assam = { x: 3, y: 2, dir: 1 };
+      let turn = 0;
+      let phase = "rotate";
+      let placeTypeIndex = 0;
+      let highlighted = [];
+      const money = { A: 30, B: 30, C: 30 };
 
-      const assam = { row: 2, col: 3 };
-      const board = document.querySelector("#board");
+      const boardEl = document.getElementById("board");
+      const turnPlayerEl = document.getElementById("turnPlayer");
+      const directionEl = document.getElementById("direction");
+      const phaseEl = document.getElementById("phase");
+      const moneyEl = document.getElementById("money");
+      const terrainToPlaceEl = document.getElementById("terrainToPlace");
+      const logEl = document.getElementById("log");
 
-      template.forEach((rowData, rowIndex) => {
-        const row = document.createElement("div");
-        row.className = "row";
-        row.style.setProperty("--offset", rowIndex % 2 === 0 ? "0px" : "33px");
+      const rotateBtn = document.getElementById("rotateBtn");
+      const moveBtn = document.getElementById("moveBtn");
+      const placeBtn = document.getElementById("placeBtn");
+      const endBtn = document.getElementById("endBtn");
 
-        rowData.forEach((_, colIndex) => {
-          const tile = document.createElement("div");
-          const key = `${rowIndex}-${colIndex}`;
-          const seeded = seededTiles.get(key);
+      function currentPlayer() {
+        return players[turn % players.length];
+      }
 
-          tile.className = "hex";
-          tile.dataset.type = seeded?.type ?? "empty";
-          tile.innerHTML = `<span>${rowIndex},${colIndex}</span>${
-            seeded ? `<span class="owner">${seeded.owner}</span>` : ""
-          }`;
+      function log(message) {
+        const li = document.createElement("li");
+        li.textContent = `Turn ${turn + 1}: ${message}`;
+        logEl.prepend(li);
+      }
 
-          if (assam.row === rowIndex && assam.col === colIndex) {
-            tile.classList.add("assam-on");
+      function cellAt(x, y) {
+        return board[y] && board[y][x] ? board[y][x] : null;
+      }
+
+      function neighbors(x, y) {
+        return directions
+          .map((d) => cellAt(x + d.delta[0], y + d.delta[1]))
+          .filter(Boolean);
+      }
+
+      function connectedCount(start) {
+        const targetType = start.type;
+        const stack = [start];
+        const visited = new Set([`${start.x},${start.y}`]);
+        while (stack.length) {
+          const c = stack.pop();
+          for (const n of neighbors(c.x, c.y)) {
+            const key = `${n.x},${n.y}`;
+            if (!visited.has(key) && n.type === targetType && n.owner === start.owner) {
+              visited.add(key);
+              stack.push(n);
+            }
+          }
+        }
+        return visited.size;
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = "";
+        rows.forEach((count, y) => {
+          const rowEl = document.createElement("div");
+          rowEl.className = "row";
+          rowEl.style.setProperty("--offset", `${Math.abs(2 - y) * 33}px`);
+
+          for (let x = 0; x < count; x++) {
+            const cell = board[y][x];
+            const hex = document.createElement("button");
+            hex.className = "hex";
+            hex.dataset.x = x;
+            hex.dataset.y = y;
+            hex.dataset.type = cell.type || "";
+            hex.type = "button";
+            hex.textContent = `${x},${y}`;
+
+            if (cell.owner) {
+              const owner = document.createElement("span");
+              owner.className = "owner";
+              owner.textContent = cell.owner;
+              hex.appendChild(owner);
+            }
+
+            if (x === assam.x && y === assam.y) {
+              hex.classList.add("assam-on");
+            }
+
+            const isHighlighted = highlighted.some((h) => h.x === x && h.y === y);
+            if (isHighlighted) {
+              hex.classList.add("placeable");
+              hex.addEventListener("click", () => placeTerrain(x, y));
+            }
+
+            rowEl.appendChild(hex);
           }
 
-          row.appendChild(tile);
+          boardEl.appendChild(rowEl);
+        });
+      }
+
+      function updateHud() {
+        turnPlayerEl.textContent = `プレイヤー${currentPlayer()}`;
+        directionEl.textContent = directions[assam.dir].name;
+        phaseEl.textContent = {
+          rotate: "向き変更",
+          move: "移動",
+          place: "配置",
+          end: "手番終了"
+        }[phase];
+        terrainToPlaceEl.textContent = terrainCycle[placeTypeIndex];
+        moneyEl.textContent = `A: ${money.A} / B: ${money.B} / C: ${money.C}`;
+
+        rotateBtn.disabled = phase !== "rotate";
+        moveBtn.disabled = phase !== "move";
+        placeBtn.disabled = phase !== "place";
+        endBtn.disabled = phase !== "end";
+      }
+
+      function rotateAssam() {
+        if (phase !== "rotate") return;
+        assam.dir = (assam.dir + 1) % directions.length;
+        phase = "move";
+        log(`${currentPlayer()}がアッサムの向きを${directions[assam.dir].name}へ変更`);
+        refresh();
+      }
+
+      function moveAssam() {
+        if (phase !== "move") return;
+        const d = directions[assam.dir].delta;
+        let next = cellAt(assam.x + d[0], assam.y + d[1]);
+        if (!next) {
+          assam.dir = (assam.dir + 3) % directions.length;
+          const reversed = directions[assam.dir].delta;
+          next = cellAt(assam.x + reversed[0], assam.y + reversed[1]);
+        }
+        if (!next) return;
+
+        assam.x = next.x;
+        assam.y = next.y;
+        log(`${currentPlayer()}のアッサムが(${next.x},${next.y})に移動`);
+
+        if (next.type && next.owner && next.owner !== currentPlayer()) {
+          const pay = connectedCount(next);
+          money[currentPlayer()] -= pay;
+          money[next.owner] += pay;
+          log(`${next.type}の連結${pay} → ${currentPlayer()}が${next.owner}へ${pay}支払い`);
+        }
+
+        phase = "place";
+        refresh();
+      }
+
+      function startPlace() {
+        if (phase !== "place") return;
+        highlighted = neighbors(assam.x, assam.y).filter((c) => !c.type);
+        if (!highlighted.length) {
+          log("隣接に空きマスがないため配置をスキップ");
+          phase = "end";
+        }
+        refresh();
+      }
+
+      function placeTerrain(x, y) {
+        if (phase !== "place") return;
+        const cell = cellAt(x, y);
+        if (!cell || cell.type) return;
+
+        cell.type = terrainCycle[placeTypeIndex];
+        cell.owner = currentPlayer();
+        log(`${currentPlayer()}が(${x},${y})へ${cell.type}を配置`);
+
+        placeTypeIndex = (placeTypeIndex + 1) % terrainCycle.length;
+        highlighted = [];
+        phase = "end";
+        refresh();
+      }
+
+      function endTurn() {
+        if (phase !== "end") return;
+        turn += 1;
+        phase = "rotate";
+        log(`次の手番はプレイヤー${currentPlayer()}`);
+        refresh();
+      }
+
+      function refresh() {
+        renderBoard();
+        updateHud();
+      }
+
+      function initBoard() {
+        rows.forEach((count, y) => {
+          const row = [];
+          for (let x = 0; x < count; x++) {
+            row.push({ x, y, type: null, owner: null });
+          }
+          board.push(row);
         });
 
-        board.appendChild(row);
-      });
+        const seed = [
+          { x: 1, y: 1, type: "sea", owner: "B" },
+          { x: 2, y: 1, type: "sea", owner: "B" },
+          { x: 4, y: 2, type: "mountain", owner: "C" },
+          { x: 3, y: 3, type: "city", owner: "A" }
+        ];
+        seed.forEach((s) => {
+          const c = cellAt(s.x, s.y);
+          if (c) {
+            c.type = s.type;
+            c.owner = s.owner;
+          }
+        });
+
+        rotateBtn.addEventListener("click", rotateAssam);
+        moveBtn.addEventListener("click", moveAssam);
+        placeBtn.addEventListener("click", startPlace);
+        endBtn.addEventListener("click", endTurn);
+
+        log("ゲーム開始。プレイヤーAから開始");
+        refresh();
+      }
+
+      initBoard();
     </script>
   </body>
 </html>
