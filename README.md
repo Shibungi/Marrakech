@@ -6,9 +6,7 @@
 
 GitHub Pagesで公開したページはこちらです。
 
-- https://<GitHubユーザー名>.github.io/Marrakech/
-
-> ※ `<GitHubユーザー名>` は実際のユーザー名に置き換えてください。
+- https://Shibungi.github.io/Marrakech/
 
 ## ローカルでの確認方法
 
