@@ -251,12 +251,12 @@
       const terrainCycle = ["sea", "mountain", "city"];
       const players = ["A", "B", "C"];
       const directions = [
-        { name: "東", delta: [1, 0] },
-        { name: "北東", delta: [0, -1] },
-        { name: "北西", delta: [-1, -1] },
-        { name: "西", delta: [-1, 0] },
-        { name: "南西", delta: [0, 1] },
-        { name: "南東", delta: [1, 1] }
+        { name: "東" },
+        { name: "北東" },
+        { name: "北西" },
+        { name: "西" },
+        { name: "南西" },
+        { name: "南東" }
       ];
 
       const board = [];
@@ -293,9 +293,42 @@
         return board[y] && board[y][x] ? board[y][x] : null;
       }
 
+      function directionalCoord(x, y, directionIndex) {
+        switch (directionIndex) {
+          case 0:
+            return [x + 1, y];
+          case 3:
+            return [x - 1, y];
+          case 1:
+          case 2: {
+            const upperY = y - 1;
+            if (upperY < 0) return null;
+            const upperIsShorter = rows[upperY] < rows[y];
+            if (directionIndex === 1) {
+              return upperIsShorter ? [x, upperY] : [x + 1, upperY];
+            }
+            return upperIsShorter ? [x - 1, upperY] : [x, upperY];
+          }
+          case 4:
+          case 5: {
+            const lowerY = y + 1;
+            if (lowerY >= rows.length) return null;
+            const lowerIsShorter = rows[lowerY] < rows[y];
+            if (directionIndex === 4) {
+              return lowerIsShorter ? [x - 1, lowerY] : [x, lowerY];
+            }
+            return lowerIsShorter ? [x, lowerY] : [x + 1, lowerY];
+          }
+          default:
+            return null;
+        }
+      }
+
       function neighbors(x, y) {
         return directions
-          .map((d) => cellAt(x + d.delta[0], y + d.delta[1]))
+          .map((_, index) => directionalCoord(x, y, index))
+          .filter(Boolean)
+          .map(([nx, ny]) => cellAt(nx, ny))
           .filter(Boolean);
       }
 
@@ -378,7 +411,7 @@
 
       function updateHud() {
         turnPlayerEl.textContent = `プレイヤー${currentPlayer()}`;
-        directionEl.textContent = directions[assam.dir].name;
+        directionEl.textContent = `${directions[assam.dir].name} (${assam.dir})`;
         positionEl.textContent = `(${assam.x}, ${assam.y})`;
         phaseEl.textContent = {
           rotate: "向き変更",
@@ -393,9 +426,10 @@
       }
 
       function directionFromAssam(x, y) {
-        const dx = x - assam.x;
-        const dy = y - assam.y;
-        return directions.findIndex((d) => d.delta[0] === dx && d.delta[1] === dy);
+        return directions.findIndex((_, directionIndex) => {
+          const coord = directionalCoord(assam.x, assam.y, directionIndex);
+          return coord && coord[0] === x && coord[1] === y;
+        });
       }
 
       function setAssamDirection(directionIndex) {
@@ -408,12 +442,12 @@
 
       function moveAssam() {
         if (phase !== "move") return;
-        const d = directions[assam.dir].delta;
-        let next = cellAt(assam.x + d[0], assam.y + d[1]);
+        const forward = directionalCoord(assam.x, assam.y, assam.dir);
+        let next = forward ? cellAt(forward[0], forward[1]) : null;
         if (!next) {
           assam.dir = (assam.dir + 3) % directions.length;
-          const reversed = directions[assam.dir].delta;
-          next = cellAt(assam.x + reversed[0], assam.y + reversed[1]);
+          const reversed = directionalCoord(assam.x, assam.y, assam.dir);
+          next = reversed ? cellAt(reversed[0], reversed[1]) : null;
         }
         if (!next) return;
 
