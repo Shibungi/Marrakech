@@ -161,6 +161,11 @@
         cursor: pointer;
       }
 
+      .hex.rotate-selectable {
+        box-shadow: inset 0 0 0 3px #9bd0ff;
+        cursor: pointer;
+      }
+
       .controls { display: grid; gap: 0.5rem; }
 
       .btn {
@@ -212,6 +217,7 @@
         <p>・着地した地形が他プレイヤー所有なら連結数ぶん支払い</p>
         <p>・支払額 = 連結している同タイプ地形の枚数</p>
         <p>・配置時はアッサム隣接の空きマスのみ選択可能</p>
+        <p>・向き変更フェーズは盤面の隣接マスをクリックして向きを決定</p>
       </section>
 
       <section class="board-wrap">
@@ -358,9 +364,15 @@
             }
 
             const isHighlighted = highlighted.some((h) => h.x === x && h.y === y);
+            const directionIndex = directionFromAssam(x, y);
+            const isRotateSelectable = phase === "rotate" && directionIndex !== -1;
+
             if (isHighlighted) {
               hex.classList.add("placeable");
               hex.addEventListener("click", () => placeTerrain(x, y));
+            } else if (isRotateSelectable) {
+              hex.classList.add("rotate-selectable");
+              hex.addEventListener("click", () => setAssamDirection(directionIndex));
             }
 
             rowEl.appendChild(hex);
@@ -392,6 +404,20 @@
       function rotateAssam() {
         if (phase !== "rotate") return;
         assam.dir = (assam.dir + 1) % directions.length;
+        phase = "move";
+        log(`${currentPlayer()}がアッサムの向きを${directions[assam.dir].name}へ変更`);
+        refresh();
+      }
+
+      function directionFromAssam(x, y) {
+        const dx = x - assam.x;
+        const dy = y - assam.y;
+        return directions.findIndex((d) => d.delta[0] === dx && d.delta[1] === dy);
+      }
+
+      function setAssamDirection(directionIndex) {
+        if (phase !== "rotate") return;
+        assam.dir = directionIndex;
         phase = "move";
         log(`${currentPlayer()}がアッサムの向きを${directions[assam.dir].name}へ変更`);
         refresh();
