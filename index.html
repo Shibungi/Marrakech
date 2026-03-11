@@ -238,10 +238,7 @@
 
         <h3 style="margin-top: 1rem">操作</h3>
         <div class="controls">
-          <button id="rotateBtn" class="btn" type="button">↺ 向きを変更</button>
           <button id="moveBtn" class="btn" type="button">⇢ アッサムを移動</button>
-          <button id="placeBtn" class="btn" type="button">＋ 隣接マスへ地形配置</button>
-          <button id="endBtn" class="btn" type="button">⏭ 手番終了</button>
         </div>
 
         <h3 style="margin-top: 1rem">イベントログ</h3>
@@ -279,10 +276,7 @@
       const terrainToPlaceEl = document.getElementById("terrainToPlace");
       const logEl = document.getElementById("log");
 
-      const rotateBtn = document.getElementById("rotateBtn");
       const moveBtn = document.getElementById("moveBtn");
-      const placeBtn = document.getElementById("placeBtn");
-      const endBtn = document.getElementById("endBtn");
       const directionToAngle = [90, 30, -30, -90, -150, 150];
 
       function currentPlayer() {
@@ -395,18 +389,7 @@
         terrainToPlaceEl.textContent = terrainCycle[placeTypeIndex];
         moneyEl.textContent = `A: ${money.A} / B: ${money.B} / C: ${money.C}`;
 
-        rotateBtn.disabled = phase !== "rotate";
         moveBtn.disabled = phase !== "move";
-        placeBtn.disabled = phase !== "place";
-        endBtn.disabled = phase !== "end";
-      }
-
-      function rotateAssam() {
-        if (phase !== "rotate") return;
-        assam.dir = (assam.dir + 1) % directions.length;
-        phase = "move";
-        log(`${currentPlayer()}がアッサムの向きを${directions[assam.dir].name}へ変更`);
-        refresh();
       }
 
       function directionFromAssam(x, y) {
@@ -446,7 +429,7 @@
         }
 
         phase = "place";
-        refresh();
+        startPlace();
       }
 
       function startPlace() {
@@ -454,7 +437,8 @@
         highlighted = neighbors(assam.x, assam.y).filter((c) => !c.type);
         if (!highlighted.length) {
           log("隣接に空きマスがないため配置をスキップ");
-          phase = "end";
+          advanceTurn();
+          return;
         }
         refresh();
       }
@@ -470,12 +454,10 @@
 
         placeTypeIndex = (placeTypeIndex + 1) % terrainCycle.length;
         highlighted = [];
-        phase = "end";
-        refresh();
+        advanceTurn();
       }
 
-      function endTurn() {
-        if (phase !== "end") return;
+      function advanceTurn() {
         turn += 1;
         phase = "rotate";
         log(`次の手番はプレイヤー${currentPlayer()}`);
@@ -510,10 +492,7 @@
           }
         });
 
-        rotateBtn.addEventListener("click", rotateAssam);
         moveBtn.addEventListener("click", moveAssam);
-        placeBtn.addEventListener("click", startPlace);
-        endBtn.addEventListener("click", endTurn);
 
         log("ゲーム開始。プレイヤーAから開始");
         refresh();
