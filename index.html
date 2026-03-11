@@ -102,6 +102,17 @@
         position: relative;
       }
 
+      .hex .coord {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-size: 0.58rem;
+        color: #d7defe;
+        background: #0a102ba6;
+        border-radius: 999px;
+        padding: 0.05rem 0.3rem;
+      }
+
       .hex[data-type="sea"] { background: color-mix(in srgb, var(--sea) 50%, #1a2552 50%); }
       .hex[data-type="mountain"] { background: color-mix(in srgb, var(--mountain) 50%, #1a2552 50%); }
       .hex[data-type="city"] { background: color-mix(in srgb, var(--city) 50%, #1a2552 50%); }
@@ -118,6 +129,31 @@
       .hex.assam-on {
         outline: 3px solid #fff;
         outline-offset: -3px;
+      }
+
+      .assam-marker {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #f7f9ff;
+        color: #121a3c;
+        border: 2px solid #ffffff;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+        font-weight: 700;
+        box-shadow: 0 0 0 3px #12205899;
+      }
+
+      .assam-dir-indicator {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 14px solid #ffe47b;
+        transform-origin: 50% 26px;
+        filter: drop-shadow(0 1px 2px #000);
       }
 
       .hex.placeable {
@@ -188,6 +224,7 @@
         <div class="hud">
           <div class="stat">現在手番<span id="turnPlayer" class="value">-</span></div>
           <div class="stat">アッサムの向き<span id="direction" class="value">-</span></div>
+          <div class="stat">アッサムの位置<span id="position" class="value">-</span></div>
           <div class="stat">フェーズ<span id="phase" class="value">-</span></div>
           <div class="stat">所持金<span id="money" class="value money">-</span></div>
           <div class="stat">配置地形<span id="terrainToPlace" class="value">-</span></div>
@@ -231,6 +268,7 @@
       const turnPlayerEl = document.getElementById("turnPlayer");
       const directionEl = document.getElementById("direction");
       const phaseEl = document.getElementById("phase");
+      const positionEl = document.getElementById("position");
       const moneyEl = document.getElementById("money");
       const terrainToPlaceEl = document.getElementById("terrainToPlace");
       const logEl = document.getElementById("log");
@@ -239,6 +277,7 @@
       const moveBtn = document.getElementById("moveBtn");
       const placeBtn = document.getElementById("placeBtn");
       const endBtn = document.getElementById("endBtn");
+      const directionToAngle = [90, 30, -30, -90, -150, 150];
 
       function currentPlayer() {
         return players[turn % players.length];
@@ -292,7 +331,11 @@
             hex.dataset.y = y;
             hex.dataset.type = cell.type || "";
             hex.type = "button";
-            hex.textContent = `${x},${y}`;
+
+            const coord = document.createElement("span");
+            coord.className = "coord";
+            coord.textContent = `${x},${y}`;
+            hex.appendChild(coord);
 
             if (cell.owner) {
               const owner = document.createElement("span");
@@ -303,6 +346,15 @@
 
             if (x === assam.x && y === assam.y) {
               hex.classList.add("assam-on");
+              const marker = document.createElement("span");
+              marker.className = "assam-marker";
+              marker.textContent = "A";
+              hex.appendChild(marker);
+
+              const directionIndicator = document.createElement("span");
+              directionIndicator.className = "assam-dir-indicator";
+              directionIndicator.style.transform = `rotate(${directionToAngle[assam.dir]}deg) translateY(-21px)`;
+              hex.appendChild(directionIndicator);
             }
 
             const isHighlighted = highlighted.some((h) => h.x === x && h.y === y);
@@ -321,6 +373,7 @@
       function updateHud() {
         turnPlayerEl.textContent = `プレイヤー${currentPlayer()}`;
         directionEl.textContent = directions[assam.dir].name;
+        positionEl.textContent = `(${assam.x}, ${assam.y})`;
         phaseEl.textContent = {
           rotate: "向き変更",
           move: "移動",
