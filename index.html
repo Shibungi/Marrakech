@@ -90,7 +90,7 @@
       .row { display: flex; gap: 0.15rem; margin-left: var(--offset, 0px); }
 
       .hex {
-        width: 64px;
+        width: 62.35px;
         height: 72px;
         clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
         background: #222b54;
@@ -276,7 +276,7 @@
     </main>
 
     <script>
-      const rows = [6, 7, 8, 7, 6];
+      const rows = [4, 5, 6, 7, 6, 5, 4];
       const terrainCycle = ["sea", "mountain", "city"];
       const players = ["A", "B", "C"];
       const directions = [
@@ -289,7 +289,7 @@
       ];
 
       const board = [];
-      let assam = { x: 3, y: 2, dir: 1 };
+      let assam = { x: 3, y: 3, dir: 1 };
       let turn = 0;
       let phase = "rotate";
       let selectedTerrainType = terrainCycle[0];
@@ -309,6 +309,8 @@
 
       const moveBtn = document.getElementById("moveBtn");
       const directionToAngle = [90, 30, -30, -90, -150, 150];
+      const boardCenterY = Math.floor(rows.length / 2);
+      const boardCenterX = Math.floor(rows[boardCenterY] / 2);
 
       function currentPlayer() {
         return players[turn % players.length];
@@ -385,7 +387,7 @@
         rows.forEach((count, y) => {
           const rowEl = document.createElement("div");
           rowEl.className = "row";
-          rowEl.style.setProperty("--offset", `${Math.abs(2 - y) * 33}px`);
+          rowEl.style.setProperty("--offset", `${Math.abs(boardCenterY - y) * 31}px`);
 
           for (let x = 0; x < count; x++) {
             const cell = board[y][x];
@@ -477,28 +479,104 @@
 
       function moveAssam() {
         if (phase !== "move") return;
-        const forward = directionalCoord(assam.x, assam.y, assam.dir);
-        let next = forward ? cellAt(forward[0], forward[1]) : null;
-        if (!next) {
-          assam.dir = (assam.dir + 3) % directions.length;
-          const reversed = directionalCoord(assam.x, assam.y, assam.dir);
-          next = reversed ? cellAt(reversed[0], reversed[1]) : null;
+        const moveDistance = Math.floor(Math.random() * 3) + 1;
+        log(`${currentPlayer()}の移動量: ${moveDistance}`);
+
+        for (let step = 0; step < moveDistance; step++) {
+          const next = stepAssamForward();
+          if (!next) return;
+          assam.x = next.x;
+          assam.y = next.y;
         }
-        if (!next) return;
 
-        assam.x = next.x;
-        assam.y = next.y;
-        log(`${currentPlayer()}のアッサムが(${next.x},${next.y})に移動`);
+        const landing = cellAt(assam.x, assam.y);
+        if (!landing) return;
+        log(`${currentPlayer()}のアッサムが(${landing.x},${landing.y})に移動`);
 
-        if (next.type && next.owner && next.owner !== currentPlayer()) {
-          const pay = connectedCount(next);
+        if (landing.type && landing.owner && landing.owner !== currentPlayer()) {
+          const pay = connectedCount(landing);
           money[currentPlayer()] -= pay;
-          money[next.owner] += pay;
-          log(`${next.type}の連結${pay} → ${currentPlayer()}が${next.owner}へ${pay}支払い`);
+          money[landing.owner] += pay;
+          log(`${landing.type}の連結${pay} → ${currentPlayer()}が${landing.owner}へ${pay}支払い`);
         }
 
         phase = "place";
         startPlace();
+      }
+
+      function toPixel(x, y) {
+        const horizontalStep = 62.35;
+        const verticalStep = 54;
+        const offset = (rows[boardCenterY] - rows[y]) * (horizontalStep / 2);
+        return {
+          px: (x + 0.5) * horizontalStep + offset,
+          py: (y + 0.5) * verticalStep
+        };
+      }
+
+      function directionVector(directionIndex) {
+        const [nx, ny] = directionalCoord(assam.x, assam.y, directionIndex) || [assam.x, assam.y];
+        const from = toPixel(assam.x, assam.y);
+        const to = toPixel(nx, ny);
+        return { vx: to.px - from.px, vy: to.py - from.py };
+      }
+
+      function boundaryCellsClockwise() {
+        const boundary = [];
+        const center = toPixel(boardCenterX, boardCenterY);
+        for (let y = 0; y < rows.length; y++) {
+          for (let x = 0; x < rows[y]; x++) {
+            const openSides = directions.some((_, dir) => {
+              const coord = directionalCoord(x, y, dir);
+              return !coord || !cellAt(coord[0], coord[1]);
+            });
+            if (openSides) {
+              const { px, py } = toPixel(x, y);
+              const angle = Math.atan2(py - center.py, px - center.px);
+              boundary.push({ x, y, angle });
+            }
+          }
+        }
+        boundary.sort((a, b) => a.angle - b.angle);
+        return boundary;
+      }
+
+      function directionBetween(from, to) {
+        return directions.findIndex((_, dir) => {
+          const c = directionalCoord(from.x, from.y, dir);
+          return c && c[0] === to.x && c[1] === to.y;
+        });
+      }
+
+      function stepAssamForward() {
+        const forward = directionalCoord(assam.x, assam.y, assam.dir);
+        const forwardCell = forward ? cellAt(forward[0], forward[1]) : null;
+        if (forwardCell) {
+          return forwardCell;
+        }
+
+        const boundary = boundaryCellsClockwise();
+        const currentIndex = boundary.findIndex((c) => c.x === assam.x && c.y === assam.y);
+        if (currentIndex === -1) return null;
+
+        const cw = boundary[(currentIndex + 1) % boundary.length];
+        const ccw = boundary[(currentIndex - 1 + boundary.length) % boundary.length];
+        const currentVector = directionVector(assam.dir);
+        const fromPoint = toPixel(assam.x, assam.y);
+        const cwPoint = toPixel(cw.x, cw.y);
+        const ccwPoint = toPixel(ccw.x, ccw.y);
+
+        const cwScore = currentVector.vx * (cwPoint.px - fromPoint.px) + currentVector.vy * (cwPoint.py - fromPoint.py);
+        const ccwScore = currentVector.vx * (ccwPoint.px - fromPoint.px) + currentVector.vy * (ccwPoint.py - fromPoint.py);
+
+        const wrapped = cwScore >= ccwScore ? cw : ccw;
+        const travelNext = cwScore >= ccwScore ? boundary[(currentIndex + 2) % boundary.length] : boundary[(currentIndex - 2 + boundary.length) % boundary.length];
+        const newDirection = directionBetween(wrapped, travelNext);
+        if (newDirection !== -1) {
+          assam.dir = newDirection;
+        }
+        log(`盤端で折り返し → (${wrapped.x},${wrapped.y})へ`);
+        return cellAt(wrapped.x, wrapped.y);
       }
 
       function startPlace() {
