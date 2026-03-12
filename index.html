@@ -265,8 +265,8 @@
         </div>
 
         <h2 style="margin-top: 1rem">ルール（簡易）</h2>
-        <p>・着地した地形が他プレイヤー所有なら連結数ぶん支払い</p>
-        <p>・支払額 = 連結している同タイプ地形の枚数</p>
+        <p>・着地地形タイプの連結成分内で、各プレイヤーの枚数を比較して支払い</p>
+        <p>・自分より多いプレイヤーごとに（相手枚数 - 自分枚数）を支払う</p>
         <p>・配置時は2マス地形を配置（1マスはアッサム隣接）</p>
         <p>・配置先に既存地形があっても上書き配置可能</p>
         <p>・向き変更フェーズは盤面の隣接マスをクリックして向きを決定</p>
@@ -391,21 +391,51 @@
           .filter(Boolean);
       }
 
-      function connectedCount(start) {
+      function connectedComponent(start) {
         const targetType = start.type;
         const stack = [start];
         const visited = new Set([`${start.x},${start.y}`]);
+        const component = [start];
         while (stack.length) {
           const c = stack.pop();
           for (const n of neighbors(c.x, c.y)) {
             const key = `${n.x},${n.y}`;
-            if (!visited.has(key) && n.type === targetType && n.owner === start.owner) {
+            if (!visited.has(key) && n.type === targetType) {
               visited.add(key);
               stack.push(n);
+              component.push(n);
             }
           }
         }
-        return visited.size;
+        return component;
+      }
+
+      function settlementByComponent(landing, payer) {
+        if (!landing.type) {
+          return [];
+        }
+
+        const component = connectedComponent(landing);
+        const counts = {};
+        players.forEach((player) => {
+          counts[player] = 0;
+        });
+
+        component.forEach((cell) => {
+          if (counts[cell.owner] !== undefined) {
+            counts[cell.owner] += 1;
+          }
+        });
+
+        const ownCount = counts[payer] || 0;
+        return players
+          .filter((player) => player !== payer && counts[player] > ownCount)
+          .map((receiver) => ({
+            receiver,
+            amount: counts[receiver] - ownCount,
+            receiverCount: counts[receiver],
+            ownCount
+          }));
       }
 
       function renderBoard() {
@@ -530,11 +560,18 @@
         log(`${currentPlayer()}のアッサムが(${landing.x},${landing.y})に移動`);
         moveResultEl.textContent = `移動量 ${moveDistance} / 着地: (${landing.x}, ${landing.y})`;
 
-        if (landing.type && landing.owner && landing.owner !== currentPlayer()) {
-          const pay = connectedCount(landing);
-          money[currentPlayer()] -= pay;
-          money[landing.owner] += pay;
-          log(`${landing.type}の連結${pay} → ${currentPlayer()}が${landing.owner}へ${pay}支払い`);
+        const payer = currentPlayer();
+        const payments = settlementByComponent(landing, payer);
+        if (payments.length) {
+          payments.forEach(({ receiver, amount, receiverCount, ownCount }) => {
+            money[payer] -= amount;
+            money[receiver] += amount;
+            log(
+              `${landing.type}連結成分: ${receiver}(${receiverCount}) - ${payer}(${ownCount}) = ${amount}支払い`
+            );
+          });
+        } else if (landing.type) {
+          log(`${landing.type}連結成分で${payer}より多いプレイヤーなし → 支払いなし`);
         }
 
         phase = "place";
