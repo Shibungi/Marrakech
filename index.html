@@ -95,12 +95,22 @@
         display: grid;
         gap: 0.45rem;
         justify-items: center;
+        width: min(100%, 420px);
+        margin: 0 auto;
       }
 
       .move-result {
         min-height: 1.35rem;
         font-size: 0.9rem;
         color: #d6e0ff;
+        text-align: center;
+      }
+
+      .place-guide {
+        min-height: 1.35rem;
+        font-size: 0.9rem;
+        color: #b6ffdf;
+        text-align: center;
       }
 
       .hex {
@@ -268,6 +278,8 @@
         <div class="board-controls">
           <button id="moveBtn" class="btn" type="button">⇢ アッサムを移動</button>
           <p id="moveResult" class="move-result" aria-live="polite">移動結果はここに表示されます</p>
+          <p id="placeGuide" class="place-guide" aria-live="polite">地形配置の案内はここに表示されます</p>
+          <div class="terrain-picker" id="terrainPicker"></div>
         </div>
       </section>
 
@@ -281,10 +293,6 @@
           <div class="stat">所持金<span id="money" class="value money">-</span></div>
           <div class="stat">配置地形<span id="terrainToPlace" class="value">-</span></div>
         </div>
-
-        <h3 style="margin-top: 1rem">操作</h3>
-        <div class="terrain-picker" id="terrainPicker"></div>
-        <p>アッサム移動ボタンは盤面のすぐ下にあります。</p>
 
         <h3 style="margin-top: 1rem">イベントログ</h3>
         <ul id="log" class="log"></ul>
@@ -323,6 +331,7 @@
       const logEl = document.getElementById("log");
       const terrainPickerEl = document.getElementById("terrainPicker");
       const moveResultEl = document.getElementById("moveResult");
+      const placeGuideEl = document.getElementById("placeGuide");
 
       const moveBtn = document.getElementById("moveBtn");
       const directionToAngle = [90, 30, -30, -90, -150, 150];
@@ -477,6 +486,15 @@
         moneyEl.textContent = `A: ${money.A} / B: ${money.B} / C: ${money.C}`;
 
         moveBtn.disabled = phase !== "move";
+
+        placeGuideEl.textContent = {
+          rotate: "向きを決めたら移動ボタンを押してください。",
+          move: "移動後に地形を2マス配置します。地形タイプは下のボタンで変更できます。",
+          place: firstPlacement
+            ? "2マス目を選んで地形配置を完了してください。"
+            : "地形配置: まずはアッサム隣接マスを選んでください。",
+          end: "手番終了処理中…"
+        }[phase];
       }
 
       function directionFromAssam(x, y) {
