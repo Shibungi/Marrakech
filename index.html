@@ -84,10 +84,24 @@
         border: 1px solid var(--line);
         border-radius: 20px;
         padding: 1rem;
+        display: grid;
+        gap: 0.8rem;
       }
 
       .board { display: grid; gap: 0.15rem; justify-content: center; }
       .row { display: flex; gap: 0.15rem; margin-left: var(--offset, 0px); }
+
+      .board-controls {
+        display: grid;
+        gap: 0.45rem;
+        justify-items: center;
+      }
+
+      .move-result {
+        min-height: 1.35rem;
+        font-size: 0.9rem;
+        color: #d6e0ff;
+      }
 
       .hex {
         width: 62.35px;
@@ -251,6 +265,10 @@
       <section class="board-wrap">
         <h2>六角形マップ</h2>
         <div id="board" class="board" aria-label="hex board"></div>
+        <div class="board-controls">
+          <button id="moveBtn" class="btn" type="button">⇢ アッサムを移動</button>
+          <p id="moveResult" class="move-result" aria-live="polite">移動結果はここに表示されます</p>
+        </div>
       </section>
 
       <section class="panel">
@@ -266,9 +284,7 @@
 
         <h3 style="margin-top: 1rem">操作</h3>
         <div class="terrain-picker" id="terrainPicker"></div>
-        <div class="controls">
-          <button id="moveBtn" class="btn" type="button">⇢ アッサムを移動</button>
-        </div>
+        <p>アッサム移動ボタンは盤面のすぐ下にあります。</p>
 
         <h3 style="margin-top: 1rem">イベントログ</h3>
         <ul id="log" class="log"></ul>
@@ -306,6 +322,7 @@
       const terrainToPlaceEl = document.getElementById("terrainToPlace");
       const logEl = document.getElementById("log");
       const terrainPickerEl = document.getElementById("terrainPicker");
+      const moveResultEl = document.getElementById("moveResult");
 
       const moveBtn = document.getElementById("moveBtn");
       const directionToAngle = [90, 30, -30, -90, -150, 150];
@@ -473,6 +490,7 @@
         if (phase !== "rotate") return;
         assam.dir = directionIndex;
         phase = "move";
+        moveResultEl.textContent = `向きを${directions[assam.dir].name}に変更。移動ボタンを押してください。`;
         log(`${currentPlayer()}がアッサムの向きを${directions[assam.dir].name}へ変更`);
         refresh();
       }
@@ -492,6 +510,7 @@
         const landing = cellAt(assam.x, assam.y);
         if (!landing) return;
         log(`${currentPlayer()}のアッサムが(${landing.x},${landing.y})に移動`);
+        moveResultEl.textContent = `移動量 ${moveDistance} / 着地: (${landing.x}, ${landing.y})`;
 
         if (landing.type && landing.owner && landing.owner !== currentPlayer()) {
           const pay = connectedCount(landing);
@@ -629,6 +648,7 @@
       function advanceTurn() {
         turn += 1;
         phase = "rotate";
+        moveResultEl.textContent = "移動前に盤面の隣接マスをクリックして向きを決めてください。";
         log(`次の手番はプレイヤー${currentPlayer()}`);
         refresh();
       }
@@ -686,6 +706,7 @@
         moveBtn.addEventListener("click", moveAssam);
         setupTerrainPicker();
 
+        moveResultEl.textContent = "移動前に盤面の隣接マスをクリックして向きを決めてください。";
         log("ゲーム開始。プレイヤーAから開始");
         refresh();
       }
