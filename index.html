@@ -150,6 +150,18 @@
         background: #00000066;
       }
 
+      .hex .owner-ring {
+        position: absolute;
+        inset: 2px;
+        clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+        border: 4px solid transparent;
+        pointer-events: none;
+      }
+
+      .hex .owner-ring.owner-A { border-color: #ff4f4f; }
+      .hex .owner-ring.owner-B { border-color: #4f87ff; }
+      .hex .owner-ring.owner-C { border-color: #ffd94f; }
+
       .hex.assam-on {
         outline: 3px solid #fff;
         outline-offset: -3px;
@@ -460,10 +472,10 @@
             hex.appendChild(coord);
 
             if (cell.owner) {
-              const owner = document.createElement("span");
-              owner.className = "owner";
-              owner.textContent = cell.owner;
-              hex.appendChild(owner);
+              const ownerRing = document.createElement("span");
+              ownerRing.className = `owner-ring owner-${cell.owner}`;
+              ownerRing.setAttribute("aria-label", `プレイヤー${cell.owner}所有`);
+              hex.appendChild(ownerRing);
             }
 
             if (x === assam.x && y === assam.y) {
