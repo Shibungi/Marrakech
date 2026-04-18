@@ -2,10 +2,12 @@ import { Client } from "boardgame.io/react";
 import { SocketIO } from "boardgame.io/multiplayer";
 import type { Ctx } from "boardgame.io";
 
-import { MarrakechGame, type PrototypeState } from "../game/MarrakechGame";
+import { MarrakechGame } from "../game/MarrakechGame";
+import type { MarrakechState, PlayerId } from "../game/types";
+import { PLAYER_LABELS, ROW_SIZES } from "../game/types";
 
 type BoardProps = {
-  G: PrototypeState;
+  G: MarrakechState;
   ctx: Ctx;
   isActive: boolean;
   playerID?: string | null;
@@ -20,25 +22,39 @@ type GamePageProps = {
 
 const SERVER_URL = import.meta.env.VITE_GAME_SERVER ?? "http://localhost:8000";
 
-function PrototypeBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
+const TERRAIN_EMOJI: Record<string, string> = {
+  sea: "🌊",
+  mountain: "⛰️",
+  city: "🏙️",
+};
+
+function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
+  const { assam, coins, board, log } = G;
+  const maxCols = Math.max(...ROW_SIZES);
+
   return (
     <main className="layout">
+      {/* ---- Status ---- */}
       <section className="panel">
-        <p className="panel-title">Current State</p>
+        <p className="panel-title">Game Status</p>
         <div className="status-grid">
           <article className="status-card">
-            <span>Stage</span>
-            <strong>
-              {G.stage} / {G.step}
-            </strong>
+            <span>Phase</span>
+            <strong>{ctx.phase ?? "—"}</strong>
           </article>
           <article className="status-card">
             <span>Current Player</span>
-            <strong>{ctx.currentPlayer}</strong>
+            <strong>
+              {PLAYER_LABELS[ctx.currentPlayer as PlayerId] ?? ctx.currentPlayer}
+            </strong>
           </article>
           <article className="status-card">
             <span>Connected As</span>
-            <strong>{playerID ?? "spectator"}</strong>
+            <strong>
+              {playerID
+                ? `${playerID} / ${PLAYER_LABELS[playerID as PlayerId] ?? playerID}`
+                : "spectator"}
+            </strong>
           </article>
           <article className="status-card">
             <span>Match ID</span>
@@ -47,59 +63,99 @@ function PrototypeBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardPro
         </div>
       </section>
 
-      <section className="panel prototype-panel">
-        <div className="prototype-header">
-          <div>
-            <p className="panel-title">Prototype Move</p>
-            <h2>{G.summary}</h2>
-          </div>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => moves.advancePrototype?.()}
-            disabled={!isActive}
-          >
-            move を実行
-          </button>
+      {/* ---- Players ---- */}
+      <section className="panel">
+        <p className="panel-title">Players</p>
+        <div className="player-strip">
+          {(["0", "1", "2"] as PlayerId[]).map((id) => (
+            <article
+              className={`player-chip ${ctx.currentPlayer === id ? "active" : ""}`}
+              key={id}
+            >
+              <span>Player {PLAYER_LABELS[id]}</span>
+              <strong>💰 {coins[id]}</strong>
+            </article>
+          ))}
         </div>
+      </section>
 
-        <p className="lead">
-          `roadmap.md` の最初の到達条件に合わせて、仮 state の描画と 1 つの
-          move 呼び出しを確認するための画面です。
-        </p>
-
+      {/* ---- Assam ---- */}
+      <section className="panel">
+        <p className="panel-title">Assam</p>
         <div className="prototype-stats">
           <article className="metric">
-            <span>Move Count</span>
-            <strong>{G.moveCount}</strong>
+            <span>Position</span>
+            <strong>
+              ({assam.position.row}, {assam.position.col})
+            </strong>
           </article>
           <article className="metric">
-            <span>Last Action</span>
-            <strong>{G.lastAction}</strong>
+            <span>Direction</span>
+            <strong>{assam.direction}</strong>
           </article>
           <article className="metric">
             <span>Turn</span>
             <strong>{ctx.turn}</strong>
           </article>
         </div>
+      </section>
 
-        <div className="player-strip">
-          {Object.entries(G.players).map(([id, player]) => (
-            <article className="player-chip" key={id}>
-              <span>Player {id}</span>
-              <strong>{player.label}</strong>
-              <small>{player.connected ? "ready" : "offline"}</small>
-            </article>
-          ))}
+      {/* ---- Board (hex grid) ---- */}
+      <section className="panel">
+        <p className="panel-title">Board</p>
+        <div className="hex-board">
+          {board.map((row, r) => {
+            const offset = maxCols - row.length;
+            return (
+              <div
+                className="hex-row"
+                key={r}
+                style={{ paddingLeft: `${offset * 22}px` }}
+              >
+                {row.map((cell, c) => {
+                  const isAssam =
+                    assam.position.row === r && assam.position.col === c;
+                  return (
+                    <div
+                      className={`hex-cell ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""}`}
+                      key={`${r}-${c}`}
+                      title={`(${r},${c})${cell ? ` ${cell.terrain} [${PLAYER_LABELS[cell.owner]}]` : ""}${isAssam ? " ★Assam" : ""}`}
+                    >
+                      {isAssam ? "★" : cell ? TERRAIN_EMOJI[cell.terrain] ?? "?" : "·"}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </section>
 
+      {/* ---- Ping (暫定 move) ---- */}
+      <section className="panel">
+        <div className="prototype-header">
+          <p className="panel-title">Action</p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => moves.ping?.()}
+            disabled={!isActive}
+          >
+            ping
+          </button>
+        </div>
+      </section>
+
+      {/* ---- Log ---- */}
       <section className="panel">
         <p className="panel-title">Event Log</p>
         <ul className="log-list">
-          {G.log.map((entry, index) => (
-            <li key={`${index}-${entry}`}>{entry}</li>
+          {log.map((entry, i) => (
+            <li key={`${i}-${entry.turn}`}>
+              [{entry.turn}] {PLAYER_LABELS[entry.player]}: {entry.detail ?? entry.action}
+            </li>
           ))}
+          {log.length === 0 && <li className="muted">No events yet.</li>}
         </ul>
       </section>
     </main>
@@ -108,7 +164,7 @@ function PrototypeBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardPro
 
 const MarrakechClient = Client({
   game: MarrakechGame,
-  board: PrototypeBoard,
+  board: GameBoard,
   numPlayers: 3,
   multiplayer: SocketIO({ server: SERVER_URL }),
 });

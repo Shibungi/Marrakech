@@ -14,11 +14,10 @@ export default function App() {
     <div className="app-shell">
       <header className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">roadmap.md / Phase 1 / Step 1</p>
-          <h1>Marrakech boardgame.io Prototype</h1>
+          <p className="eyebrow">roadmap.md / Phase 2–3</p>
+          <h1>Marrakech boardgame.io</h1>
           <p className="hero-text">
-            React + TypeScript + Vite に移行し、boardgame.io の最小構成で
-            状態表示と move 呼び出しができる土台を作成しました。
+            ドメインモデル（型定義・setup）と六角盤面座標ユーティリティを実装しました。
           </p>
           <p className="hint">{launchHint}</p>
         </div>

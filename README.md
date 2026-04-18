@@ -2,15 +2,18 @@
 
 `roadmap.md` に沿って、既存の単一 HTML デモから `boardgame.io` ベースの構成へ段階的に移行するリポジトリです。
 
-現時点の到達段階は `Phase 1 / Step 1` です。
-今回の初回実装では、`Vite + React + TypeScript + boardgame.io` の最小起動環境を作成し、仮のゲーム状態表示と 1 つの move 実行を確認できるようにしました。
+現時点の到達段階は `Phase 2–3` です。
+Phase 2 ではドメインモデル（型定義・`setup()`）を本実装し、Phase 3 では六角盤面の座標ユーティリティとテストを追加しました。
 
 ## 現在の内容
 
-- React + TypeScript + Vite のフロントエンド雛形
-- `boardgame.io` を使った最小プロトタイプゲーム
+- React + TypeScript + Vite のフロントエンド
+- `boardgame.io` を使ったゲーム定義（本実装の `MarrakechState` 型）
 - `boardgame.io/server` を使ったローカル接続用サーバー
-- 同じ `matchID` を使って複数タブで接続確認しやすい UI
+- 六角形マップ（7 段: 4-5-6-7-6-5-4）の座標ユーティリティ
+- `setup()` による仕様どおりの初期状態生成
+- 盤面・アッサム・プレイヤー情報を表示する UI
+- Vitest によるユニットテスト（hex ユーティリティ・setup）
 
 ## 使い方
 
@@ -32,12 +35,18 @@ npm run dev:server
 npm run dev:client
 ```
 
-ブラウザで `http://localhost:5173` を開き、別タブで同じ `Match ID` を使いながら `Player 0 / 1 / 2` を切り替えると、`Phase 1 / Step 1` の同期確認を進められます。
+テストを実行します。
+
+```bash
+npm test
+```
+
+ブラウザで `http://localhost:5173` を開き、別タブで同じ `Match ID` を使いながら `Player 0 / 1 / 2` を切り替えると、盤面・アッサム・所持金の同期を確認できます。
 
 ## 今後の予定
 
 次の実装候補は `roadmap.md` に記載の以下です。
 
-1. `Phase 2`: 型定義と `setup()` の本実装
-2. `Phase 3`: 六角盤の座標ユーティリティとテスト
-3. その後に move / phase の本実装へ移行
+1. `Phase 4`: フェーズ管理と手番進行
+2. `Phase 5`: 向き変更の実装
+3. `Phase 6`: 移動と折り返し処理の実装
