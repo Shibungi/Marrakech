@@ -2,24 +2,8 @@
 // Marrakech – 六角盤面座標ユーティリティ
 // Phase 3: roadmap.md の座標・隣接判定
 // ---------------------------------------------------------------------------
-//
-// 座標系: offset hex (odd-r style)
-//   行ごとのマス数: 4-5-6-7-6-5-4 (row 0..6)
-//   各行の col 範囲: 0 .. ROW_SIZES[row]-1
-//
-// 六角形の隣接は行の偶奇で offset が異なる。
-// ここでは「上半分 (row<3) は短い行が偶数列」パターンを使い、
-// 隣接 delta を row の parity (奇数/偶数列数) で切り替える。
-//
-// ただし、このマップは菱形ではなく六角形状であるため、
-// 隣接関係は axial (cube) 座標に変換して計算する方が正確。
-// ---------------------------------------------------------------------------
 
 import { type HexCoord, type Direction, ROW_SIZES, NUM_ROWS } from "./types";
-
-// ---------------------------------------------------------------------------
-// 有効マス判定
-// ---------------------------------------------------------------------------
 
 /** 指定座標が盤面上の有効マスかどうか */
 export function isValidCell(coord: HexCoord): boolean {
@@ -28,10 +12,6 @@ export function isValidCell(coord: HexCoord): boolean {
   if (col < 0 || col >= ROW_SIZES[row]) return false;
   return true;
 }
-
-// ---------------------------------------------------------------------------
-// 全マス列挙
-// ---------------------------------------------------------------------------
 
 /** 盤面上の全有効座標を返す */
 export function getAllCells(): HexCoord[] {
@@ -45,77 +25,74 @@ export function getAllCells(): HexCoord[] {
 }
 
 // ---------------------------------------------------------------------------
-// Axial 座標変換
+// Doubled 座標変換
 // ---------------------------------------------------------------------------
 //
-// 六角形状のマップ (4-5-6-7-6-5-4) を axial 座標 (q, r) に変換する。
-//   - axial r = row
-//   - axial q = col - offset(row)
-// offset(row) は、中央行 (row=3) を基準に、各行が左にどれだけずれるかを表す。
-//   row: 0  1  2  3  4  5  6
-//   size: 4  5  6  7  6  5  4
-//   offset: 0  0  0  0  1  1  1
+// 盤面 (4-5-6-7-6-5-4) は、各行が中央行(row=3)から半マスずつ水平にずれる。
+// そのため「半マス単位」を整数化した doubled-x 座標で扱う。
 //
-// これは「中央行の左端を q=0 とし、行が下がるとオフセットがずれる」形式。
-// 上半分 (row<=3): offset = 0, colの範囲は 0..size-1
-//   -> q = col, min_q = 0
-// 下半分 (row>3): offset = row-3, col の範囲は 0..size-1
-//   -> q = col + (row - 3)
+//   x = 2*col + abs(row-3)
+//   y = row
+//
+// このとき隣接は次の固定ベクトルになる。
+//   E/W  : x ± 2, y ± 0
+//   斜め : x ± 1, y ± 1
+//
+// 上下の行長差によるズレを明示的に持つため、
+// 上半分/下半分のどちらでも同じ規則で隣接を計算できる。
 // ---------------------------------------------------------------------------
 
-interface AxialCoord {
-  q: number;
-  r: number;
+interface DoubledCoord {
+  x: number;
+  y: number;
 }
 
-function toAxial(hex: HexCoord): AxialCoord {
-  const offset = hex.row <= 3 ? 0 : hex.row - 3;
-  return { q: hex.col + offset, r: hex.row };
+function rowOffset(row: number): number {
+  return Math.abs(row - 3);
 }
 
-function fromAxial(ax: AxialCoord): HexCoord {
-  const row = ax.r;
-  const offset = row <= 3 ? 0 : row - 3;
-  return { row, col: ax.q - offset };
+function toDoubled(hex: HexCoord): DoubledCoord {
+  return { x: 2 * hex.col + rowOffset(hex.row), y: hex.row };
 }
 
-// Axial 方向ベクトル (cube 座標と同等)
-//   NE: (q+1, r-1)   E: (q+1, r+0)   SE: (q+0, r+1)
-//   SW: (q-1, r+1)   W: (q-1, r+0)   NW: (q+0, r-1)
-const AXIAL_DELTAS: Record<Direction, { dq: number; dr: number }> = {
-  NE: { dq: 1, dr: -1 },
-  E: { dq: 1, dr: 0 },
-  SE: { dq: 0, dr: 1 },
-  SW: { dq: -1, dr: 1 },
-  W: { dq: -1, dr: 0 },
-  NW: { dq: 0, dr: -1 },
+function fromDoubled(dc: DoubledCoord): HexCoord | null {
+  const row = dc.y;
+  if (row < 0 || row >= NUM_ROWS) return null;
+
+  const offset = rowOffset(row);
+  const colRaw = dc.x - offset;
+  if (colRaw % 2 !== 0) return null;
+
+  const col = colRaw / 2;
+  const hex = { row, col };
+  return isValidCell(hex) ? hex : null;
+}
+
+const DOUBLED_DELTAS: Record<Direction, { dx: number; dy: number }> = {
+  NE: { dx: 1, dy: -1 },
+  E: { dx: 2, dy: 0 },
+  SE: { dx: 1, dy: 1 },
+  SW: { dx: -1, dy: 1 },
+  W: { dx: -2, dy: 0 },
+  NW: { dx: -1, dy: -1 },
 };
 
 const DIRECTION_ORDER: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
 
-// ---------------------------------------------------------------------------
-// 隣接マス列挙
-// ---------------------------------------------------------------------------
-
 /** 指定マスの有効な隣接マスをすべて返す */
 export function getNeighbors(coord: HexCoord): HexCoord[] {
-  const ax = toAxial(coord);
+  const dc = toDoubled(coord);
   const neighbors: HexCoord[] = [];
 
-  for (const { dq, dr } of Object.values(AXIAL_DELTAS)) {
-    const nax: AxialCoord = { q: ax.q + dq, r: ax.r + dr };
-    const nhex = fromAxial(nax);
-    if (isValidCell(nhex)) {
-      neighbors.push(nhex);
+  for (const { dx, dy } of Object.values(DOUBLED_DELTAS)) {
+    const next = fromDoubled({ x: dc.x + dx, y: dc.y + dy });
+    if (next) {
+      neighbors.push(next);
     }
   }
 
   return neighbors;
 }
-
-// ---------------------------------------------------------------------------
-// 方向に基づく次マス計算
-// ---------------------------------------------------------------------------
 
 /**
  * 指定位置から指定方向に 1 歩進んだ座標を返す。
@@ -125,11 +102,9 @@ export function stepInDirection(
   coord: HexCoord,
   dir: Direction,
 ): HexCoord | null {
-  const ax = toAxial(coord);
-  const delta = AXIAL_DELTAS[dir];
-  const nax: AxialCoord = { q: ax.q + delta.dq, r: ax.r + delta.dr };
-  const nhex = fromAxial(nax);
-  return isValidCell(nhex) ? nhex : null;
+  const dc = toDoubled(coord);
+  const delta = DOUBLED_DELTAS[dir];
+  return fromDoubled({ x: dc.x + delta.dx, y: dc.y + delta.dy });
 }
 
 /**
