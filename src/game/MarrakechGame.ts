@@ -5,6 +5,7 @@ import type { MarrakechState, PlayerId } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
 import { directionFromNeighbor } from "./hex";
+import { moveAssamWithBounce } from "./movement";
 
 function formatPlayer(playerID: string | null | undefined): string {
   if (playerID === undefined || playerID === null) return "unknown";
@@ -72,12 +73,37 @@ function moveAssam({
 }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "moveAssam") return INVALID_MOVE;
 
+  const randomUnit = () => {
+    if (typeof (ctx as any).random?.Number === "function") {
+      return (ctx as any).random.Number();
+    }
+    return Math.random();
+  };
+
+  const steps = Math.floor(randomUnit() * 3) + 1;
+  const result = moveAssamWithBounce(
+    G.assam.position,
+    G.assam.direction,
+    steps,
+    randomUnit,
+  );
+
+  G.assam.position = result.position;
+  G.assam.direction = result.direction;
+
   const player = formatPlayer(ctx.currentPlayer);
+  const redirectDetail =
+    result.redirects.length === 0
+      ? ""
+      : ` / 盤外回避: ${result.redirects
+          .map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}→${redirect.to}`)
+          .join(", ")}`;
+
   G.log.unshift({
     turn: ctx.turn,
     player: ctx.currentPlayer as PlayerId,
     action: "moveAssam",
-    detail: `${player} が移動フェーズを完了しました。`,
+    detail: `${player} が ${steps} マス移動し (${result.position.row},${result.position.col}) に到達。向き: ${result.direction}${redirectDetail}`,
   });
   G.turnPhase = "placeFirstTile";
   events.endStage();
