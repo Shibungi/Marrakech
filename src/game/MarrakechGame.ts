@@ -4,9 +4,10 @@ import { INVALID_MOVE } from "boardgame.io/core";
 import type { MarrakechState, PlayerId } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
-import { directionFromNeighbor } from "./hex";
+import { directionFromNeighbor, getNeighbors } from "./hex";
 import { moveAssamWithBounce } from "./movement";
 import { applyLandingPayment } from "./payment";
+import type { TerrainType } from "./types";
 
 function formatPlayer(playerID: string | null | undefined): string {
   if (playerID === undefined || playerID === null) return "unknown";
@@ -123,17 +124,28 @@ function placeFirstTile({
   G: MarrakechState;
   ctx: Ctx;
   events: { endStage: () => void };
-}): void | "INVALID_MOVE" {
+},
+target: { row: number; col: number },
+terrain: TerrainType,
+): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeFirstTile") return INVALID_MOVE;
+  const currentPlayer = ctx.currentPlayer as PlayerId;
+  const isAdjacentToAssam = getNeighbors(G.assam.position).some(
+    (neighbor) => neighbor.row === target.row && neighbor.col === target.col,
+  );
+  if (!isAdjacentToAssam) return INVALID_MOVE;
+  if (G.tiles[currentPlayer][terrain] < 2) return INVALID_MOVE;
 
   const player = formatPlayer(ctx.currentPlayer);
-  G.selectedTerrain = "sea";
-  G.firstPlacement = { ...G.assam.position };
+  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  G.tiles[currentPlayer][terrain] -= 1;
+  G.selectedTerrain = terrain;
+  G.firstPlacement = { ...target };
   G.log.unshift({
     turn: ctx.turn,
-    player: ctx.currentPlayer as PlayerId,
+    player: currentPlayer,
     action: "placeFirstTile",
-    detail: `${player} が1マス目配置フェーズを完了しました。`,
+    detail: `${player} が ${terrain} を (${target.row},${target.col}) に配置しました。`,
   });
   G.turnPhase = "placeSecondTile";
   events.endStage();
@@ -147,17 +159,32 @@ function placeSecondTile({
   G: MarrakechState;
   ctx: Ctx;
   events: { endTurn: () => void };
-}): void | "INVALID_MOVE" {
+},
+target: { row: number; col: number },
+): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeSecondTile") return INVALID_MOVE;
+  const currentPlayer = ctx.currentPlayer as PlayerId;
+  if (G.selectedTerrain === null || G.firstPlacement === null) return INVALID_MOVE;
+  if (target.row === G.assam.position.row && target.col === G.assam.position.col) {
+    return INVALID_MOVE;
+  }
+  const isAdjacentToFirst = getNeighbors(G.firstPlacement).some(
+    (neighbor) => neighbor.row === target.row && neighbor.col === target.col,
+  );
+  if (!isAdjacentToFirst) return INVALID_MOVE;
+  if (G.tiles[currentPlayer][G.selectedTerrain] < 1) return INVALID_MOVE;
 
   const player = formatPlayer(ctx.currentPlayer);
+  const terrain = G.selectedTerrain;
+  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  G.tiles[currentPlayer][terrain] -= 1;
   G.selectedTerrain = null;
   G.firstPlacement = null;
   G.log.unshift({
     turn: ctx.turn,
-    player: ctx.currentPlayer as PlayerId,
+    player: currentPlayer,
     action: "placeSecondTile",
-    detail: `${player} が2マス目配置フェーズを完了し、手番を終了しました。`,
+    detail: `${player} が ${terrain} を (${target.row},${target.col}) に配置して手番を終了しました。`,
   });
   events.endTurn();
 }

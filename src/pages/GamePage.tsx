@@ -1,11 +1,12 @@
 import { Client } from "boardgame.io/react";
 import { SocketIO } from "boardgame.io/multiplayer";
 import type { Ctx } from "boardgame.io";
+import { useMemo, useState } from "react";
 
 import { MarrakechGame } from "../game/MarrakechGame";
-import type { MarrakechState, PlayerId } from "../game/types";
+import type { MarrakechState, PlayerId, TerrainType } from "../game/types";
 import { PLAYER_LABELS, ROW_SIZES } from "../game/types";
-import { directionFromNeighbor } from "../game/hex";
+import { directionFromNeighbor, getNeighbors } from "../game/hex";
 
 type BoardProps = {
   G: MarrakechState;
@@ -31,6 +32,7 @@ const TERRAIN_EMOJI: Record<string, string> = {
 
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const { assam, coins, board, log } = G;
+  const [selectedTerrain, setSelectedTerrain] = useState<TerrainType>("sea");
   const maxCols = Math.max(...ROW_SIZES);
   const currentStage = ctx.activePlayers?.[ctx.currentPlayer];
   const currentPhase = currentStage ?? G.turnPhase;
@@ -45,20 +47,25 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const runPhaseMove = () => {
     if (currentPhase === "moveAssam") {
       moves.moveAssam?.();
-      return;
-    }
-    if (currentPhase === "placeFirstTile") {
-      moves.placeFirstTile?.();
-      return;
-    }
-    if (currentPhase === "placeSecondTile") {
-      moves.placeSecondTile?.();
     }
   };
 
   const isDirectionCandidate = (row: number, col: number) =>
     currentPhase === "chooseDirection" &&
     directionFromNeighbor(assam.position, { row, col }) !== null;
+  const placementCandidates = useMemo(() => {
+    if (currentPhase === "placeFirstTile") {
+      return getNeighbors(assam.position);
+    }
+    if (currentPhase === "placeSecondTile" && G.firstPlacement) {
+      return getNeighbors(G.firstPlacement).filter(
+        (cell) => !(cell.row === assam.position.row && cell.col === assam.position.col),
+      );
+    }
+    return [];
+  }, [G.firstPlacement, assam.position, currentPhase]);
+  const isPlacementCandidate = (row: number, col: number) =>
+    placementCandidates.some((cell) => cell.row === row && cell.col === col);
 
   return (
     <main className="layout">
@@ -144,14 +151,22 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                   const isAssam =
                     assam.position.row === r && assam.position.col === c;
                   const canChooseDirection = isActive && isDirectionCandidate(r, c);
+                  const canPlaceTile =
+                    isActive &&
+                    (currentPhase === "placeFirstTile" || currentPhase === "placeSecondTile") &&
+                    isPlacementCandidate(r, c);
                   return (
                     <div
-                      className={`hex-cell ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""} ${canChooseDirection ? "clickable" : ""}`}
+                      className={`hex-cell ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""} ${canChooseDirection || canPlaceTile ? "clickable" : ""}`}
                       key={`${r}-${c}`}
                       title={`(${r},${c})${cell ? ` ${cell.terrain} [${PLAYER_LABELS[cell.owner]}]` : ""}${isAssam ? " ★Assam" : ""}`}
                       onClick={() => {
                         if (canChooseDirection) {
                           moves.chooseDirection?.({ row: r, col: c });
+                        } else if (canPlaceTile && currentPhase === "placeFirstTile") {
+                          moves.placeFirstTile?.({ row: r, col: c }, selectedTerrain);
+                        } else if (canPlaceTile && currentPhase === "placeSecondTile") {
+                          moves.placeSecondTile?.({ row: r, col: c });
                         }
                       }}
                     >
@@ -169,11 +184,21 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
       <section className="panel">
         <div className="prototype-header">
           <p className="panel-title">Action</p>
+          {currentPhase === "placeFirstTile" && (
+            <select
+              value={selectedTerrain}
+              onChange={(event) => setSelectedTerrain(event.target.value as TerrainType)}
+            >
+              <option value="sea">sea</option>
+              <option value="mountain">mountain</option>
+              <option value="city">city</option>
+            </select>
+          )}
           <button
             className="primary-button"
             type="button"
             onClick={runPhaseMove}
-            disabled={!isActive || currentPhase === "chooseDirection"}
+            disabled={!isActive || currentPhase !== "moveAssam"}
           >
             {phaseActionLabel[currentPhase] ?? "次へ"}
           </button>

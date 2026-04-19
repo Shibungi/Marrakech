@@ -28,7 +28,8 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     expect(client.getState()?.G.turnPhase).toBe("placeFirstTile");
     expect(getCurrentStage(client.getState())).toBe("placeFirstTile");
 
-    client.moves.placeFirstTile();
+    const firstTarget = getNeighbors(client.getState()!.G.assam.position)[0];
+    client.moves.placeFirstTile(firstTarget, "sea");
     expect(client.getState()?.G.turnPhase).toBe("placeSecondTile");
     expect(getCurrentStage(client.getState())).toBe("placeSecondTile");
   });
@@ -44,8 +45,14 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     const target = getNeighbors(origin)[0];
     client.moves.chooseDirection(target);
     client.moves.moveAssam();
-    client.moves.placeFirstTile();
-    client.moves.placeSecondTile();
+    const firstTarget = getNeighbors(client.getState()!.G.assam.position)[0];
+    client.moves.placeFirstTile(firstTarget, "sea");
+    const secondTarget = getNeighbors(firstTarget).find(
+      (cell) =>
+        !(cell.row === client.getState()!.G.assam.position.row &&
+          cell.col === client.getState()!.G.assam.position.col),
+    )!;
+    client.moves.placeSecondTile(secondTarget);
 
     expect(client.getState()?.ctx.currentPlayer).toBe("1");
     expect(client.getState()?.ctx.turn).toBe(2);

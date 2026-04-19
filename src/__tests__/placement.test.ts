@@ -1,0 +1,80 @@
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { Client } from "boardgame.io/client";
+
+import { MarrakechGame } from "../game/MarrakechGame";
+import { getNeighbors } from "../game/hex";
+
+describe("MarrakechGame placement integration", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("1マス目と2マス目を合法手で配置すると在庫が減り手番終了する", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0); // 1 step
+    const client = Client({ game: MarrakechGame, numPlayers: 3 });
+    client.start();
+
+    const origin = client.getState()!.G.assam.position;
+    client.moves.chooseDirection(getNeighbors(origin)[0]);
+    client.moves.moveAssam();
+
+    const assam = client.getState()!.G.assam.position;
+    const firstTarget = getNeighbors(assam)[0];
+    client.moves.placeFirstTile(firstTarget, "mountain");
+
+    const secondTarget = getNeighbors(firstTarget).find(
+      (cell) => !(cell.row === assam.row && cell.col === assam.col),
+    )!;
+    client.moves.placeSecondTile(secondTarget);
+
+    const state = client.getState()!;
+    expect(state.G.board[firstTarget.row][firstTarget.col]).toEqual({
+      terrain: "mountain",
+      owner: "0",
+    });
+    expect(state.G.board[secondTarget.row][secondTarget.col]).toEqual({
+      terrain: "mountain",
+      owner: "0",
+    });
+    expect(state.G.tiles["0"].mountain).toBe(2);
+    expect(state.ctx.currentPlayer).toBe("1");
+    expect(state.G.turnPhase).toBe("chooseDirection");
+  });
+
+  it("1マス目はアッサム隣接でないと拒否される", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const client = Client({ game: MarrakechGame, numPlayers: 3 });
+    client.start();
+
+    const origin = client.getState()!.G.assam.position;
+    client.moves.chooseDirection(getNeighbors(origin)[0]);
+    client.moves.moveAssam();
+
+    client.moves.placeFirstTile({ row: 0, col: 0 }, "sea");
+
+    const state = client.getState()!;
+    expect(state.G.turnPhase).toBe("placeFirstTile");
+    expect(state.G.log[0].action).toBe("moveAssam");
+  });
+
+  it("2マス目は1マス目に隣接し、アッサム位置は不可", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const client = Client({ game: MarrakechGame, numPlayers: 3 });
+    client.start();
+
+    const origin = client.getState()!.G.assam.position;
+    client.moves.chooseDirection(getNeighbors(origin)[0]);
+    client.moves.moveAssam();
+
+    const assam = client.getState()!.G.assam.position;
+    const firstTarget = getNeighbors(assam)[0];
+    client.moves.placeFirstTile(firstTarget, "city");
+
+    client.moves.placeSecondTile(assam);
+
+    const state = client.getState()!;
+    expect(state.G.turnPhase).toBe("placeSecondTile");
+    expect(state.G.selectedTerrain).toBe("city");
+    expect(state.G.tiles["0"].city).toBe(3);
+  });
+});
