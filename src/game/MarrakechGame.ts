@@ -6,6 +6,7 @@ import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
 import { directionFromNeighbor } from "./hex";
 import { moveAssamWithBounce } from "./movement";
+import { applyLandingPayment } from "./payment";
 
 function formatPlayer(playerID: string | null | undefined): string {
   if (playerID === undefined || playerID === null) return "unknown";
@@ -90,6 +91,7 @@ function moveAssam({
 
   G.assam.position = result.position;
   G.assam.direction = result.direction;
+  const payment = applyLandingPayment(G, ctx.currentPlayer as PlayerId);
 
   const player = formatPlayer(ctx.currentPlayer);
   const redirectDetail =
@@ -98,12 +100,16 @@ function moveAssam({
       : ` / 盤外回避: ${result.redirects
           .map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}→${redirect.to}`)
           .join(", ")}`;
+  const paymentDetail =
+    payment.paid && payment.payee !== null
+      ? ` / 支払い: ${player} → ${formatPlayer(payment.payee)} に ${payment.amount}`
+      : "";
 
   G.log.unshift({
     turn: ctx.turn,
     player: ctx.currentPlayer as PlayerId,
     action: "moveAssam",
-    detail: `${player} が ${steps} マス移動し (${result.position.row},${result.position.col}) に到達。向き: ${result.direction}${redirectDetail}`,
+    detail: `${player} が ${steps} マス移動し (${result.position.row},${result.position.col}) に到達。向き: ${result.direction}${redirectDetail}${paymentDetail}`,
   });
   G.turnPhase = "placeFirstTile";
   events.endStage();
