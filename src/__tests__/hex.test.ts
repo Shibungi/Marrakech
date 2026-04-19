@@ -84,9 +84,9 @@ describe("getNeighbors", () => {
     }
   });
 
-  it("角マス (0,0) の隣接は 2 つ", () => {
+  it("角マス (0,0) の隣接は 3 つ", () => {
     const neighbors = getNeighbors({ row: 0, col: 0 });
-    expect(neighbors).toHaveLength(2);
+    expect(neighbors).toHaveLength(3);
   });
 
   it("角マス (0,3) の隣接は 3 つ", () => {
@@ -123,6 +123,14 @@ describe("getNeighbors", () => {
     for (const n of neighbors) {
       expect(isValidCell(n)).toBe(true);
     }
+  });
+
+  it("上下対称なマスで隣接数が一致する", () => {
+    // 上端と下端の対応セルは同じ隣接数になるべき
+    expect(getNeighbors({ row: 0, col: 0 })).toHaveLength(3);
+    expect(getNeighbors({ row: 6, col: 0 })).toHaveLength(3);
+    expect(getNeighbors({ row: 1, col: 2 })).toHaveLength(6);
+    expect(getNeighbors({ row: 5, col: 2 })).toHaveLength(6);
   });
 });
 
