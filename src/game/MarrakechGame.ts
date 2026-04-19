@@ -1,5 +1,4 @@
 import type { Ctx, Game } from "boardgame.io";
-import { INVALID_MOVE } from "boardgame.io/core";
 
 import type { MarrakechState, PlayerId } from "./types";
 import { PLAYER_LABELS } from "./types";
@@ -8,6 +7,8 @@ import { directionFromNeighbor, getNeighbors } from "./hex";
 import { moveAssamWithBounce } from "./movement";
 import { applyLandingPayment } from "./payment";
 import type { TerrainType } from "./types";
+
+const INVALID_MOVE = "INVALID_MOVE";
 
 function formatPlayer(playerID: string | null | undefined): string {
   if (playerID === undefined || playerID === null) return "unknown";
@@ -47,7 +48,7 @@ function chooseDirection({
   ctx: Ctx;
   events: { endStage: () => void };
 },
-target: { row: number; col: number }): void | "INVALID_MOVE" {
+  target: { row: number; col: number }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "chooseDirection") return INVALID_MOVE;
   const newDirection = directionFromNeighbor(G.assam.position, target);
   if (!newDirection) return INVALID_MOVE;
@@ -67,20 +68,17 @@ target: { row: number; col: number }): void | "INVALID_MOVE" {
 function moveAssam({
   G,
   ctx,
+  random,
   events,
 }: {
   G: MarrakechState;
   ctx: Ctx;
+  random: { Number: () => number };
   events: { endStage: () => void };
 }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "moveAssam") return INVALID_MOVE;
 
-  const randomUnit = () => {
-    if (typeof (ctx as any).random?.Number === "function") {
-      return (ctx as any).random.Number();
-    }
-    return Math.random();
-  };
+  const randomUnit = () => random.Number();
 
   const steps = Math.floor(randomUnit() * 3) + 1;
   const result = moveAssamWithBounce(
@@ -99,8 +97,8 @@ function moveAssam({
     result.redirects.length === 0
       ? ""
       : ` / 盤外回避: ${result.redirects
-          .map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}→${redirect.to}`)
-          .join(", ")}`;
+        .map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}→${redirect.to}`)
+        .join(", ")}`;
   const paymentDetail =
     payment.paid && payment.payee !== null
       ? ` / 支払い: ${player} → ${formatPlayer(payment.payee)} に ${payment.amount}`
@@ -125,8 +123,8 @@ function placeFirstTile({
   ctx: Ctx;
   events: { endStage: () => void };
 },
-target: { row: number; col: number },
-terrain: TerrainType,
+  target: { row: number; col: number },
+  terrain: TerrainType,
 ): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeFirstTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer as PlayerId;
@@ -160,7 +158,7 @@ function placeSecondTile({
   ctx: Ctx;
   events: { endTurn: () => void };
 },
-target: { row: number; col: number },
+  target: { row: number; col: number },
 ): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeSecondTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer as PlayerId;
