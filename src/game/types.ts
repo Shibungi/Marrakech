@@ -128,3 +128,14 @@ export interface MarrakechState {
   /** イベントログ */
   log: GameLogEntry[];
 }
+
+// ---------------------------------------------------------------------------
+// スコア
+// ---------------------------------------------------------------------------
+
+export interface PlayerScore {
+  player: PlayerId;
+  coins: number;
+  tilesOnBoard: number;
+  total: number;
+}

@@ -1,6 +1,6 @@
 import type { Ctx, Game } from "boardgame.io";
 
-import type { MarrakechState, PlayerId } from "./types";
+import type { MarrakechState, PlayerId, PlayerScore } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
 import { directionFromNeighbor, getNeighbors } from "./hex";
@@ -15,11 +15,44 @@ function formatPlayer(playerID: string | null | undefined): string {
   return PLAYER_LABELS[playerID as PlayerId] ?? playerID;
 }
 
+/** プレイヤーが配置可能なタイル（同タイプ 2 枚以上）を持っているか */
+export function canPlaceTiles(G: MarrakechState, player: PlayerId): boolean {
+  const t = G.tiles[player];
+  return t.sea >= 2 || t.mountain >= 2 || t.city >= 2;
+}
+
+/** 全プレイヤーのスコアを計算（降順ソート） */
+export function calculateScores(G: MarrakechState): PlayerScore[] {
+  const scores: PlayerScore[] = (["0", "1", "2"] as PlayerId[]).map((id) => {
+    let tilesOnBoard = 0;
+    for (const row of G.board) {
+      for (const cell of row) {
+        if (cell && cell.owner === id) tilesOnBoard++;
+      }
+    }
+    return {
+      player: id,
+      coins: G.coins[id],
+      tilesOnBoard,
+      total: G.coins[id] + tilesOnBoard,
+    };
+  });
+  return scores.sort((a, b) => b.total - a.total);
+}
+
 export const MarrakechGame: Game<MarrakechState> = {
   name: "marrakech",
   setup: () => createInitialState(),
+  endIf: ({ G }) => {
+    const allExhausted = (["0", "1", "2"] as PlayerId[]).every(
+      (id) => !canPlaceTiles(G, id),
+    );
+    if (allExhausted) {
+      const scores = calculateScores(G);
+      return { winner: scores[0].player, scores };
+    }
+  },
   turn: {
-    moveLimit: 4,
     order: {
       first: () => 0,
       next: ({ ctx }) => (Number(ctx.playOrderPos) + 1) % ctx.numPlayers,
@@ -110,6 +143,17 @@ function moveAssam({
     action: "moveAssam",
     detail: `${player} が ${steps} マス移動し (${result.position.row},${result.position.col}) に到達。向き: ${result.direction}${redirectDetail}${paymentDetail}`,
   });
+  const currentPlayer = ctx.currentPlayer as PlayerId;
+  if (!canPlaceTiles(G, currentPlayer)) {
+    G.log.unshift({
+      turn: ctx.turn,
+      player: currentPlayer,
+      action: "skipPlacement",
+      detail: `${player} は配置可能なタイルがないため配置をスキップしました。`,
+    });
+    (events as any).endTurn();
+    return;
+  }
   G.turnPhase = "placeFirstTile";
   events.endStage();
 }

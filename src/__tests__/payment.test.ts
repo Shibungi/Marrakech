@@ -52,14 +52,14 @@ describe("MarrakechGame payment integration", () => {
   });
 
   it("moveAssam の着地時に支払いが発生し所持金が更新される", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0); // steps=1
-
     const gameWithLandingTile = {
       ...MarrakechGame,
       setup: () => {
         const G = withBoard(createInitialState());
+        // 1〜3 歩 East すべてにタイルを配置（ランダム歩数に依存しない）
         G.board[3][4] = { terrain: "city", owner: "1" };
         G.board[3][5] = { terrain: "city", owner: "1" };
+        G.board[3][6] = { terrain: "city", owner: "1" };
         return G;
       },
     };
@@ -71,9 +71,12 @@ describe("MarrakechGame payment integration", () => {
     client.moves.moveAssam();
 
     const next = client.getState()!;
-    expect(next.G.assam.position).toEqual({ row: 3, col: 4 });
-    expect(next.G.coins["0"]).toBe(28);
-    expect(next.G.coins["1"]).toBe(32);
+    const landing = next.G.assam.position;
+    expect(landing.row).toBe(3);
+    expect([4, 5, 6]).toContain(landing.col);
+    // 連結成分サイズ = 3 なので支払い = 3
+    expect(next.G.coins["0"]).toBe(27);
+    expect(next.G.coins["1"]).toBe(33);
     expect(next.G.log[0].detail).toContain("支払い");
   });
 });
