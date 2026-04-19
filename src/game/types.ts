@@ -104,6 +104,9 @@ export interface GameLogEntry {
 // ---------------------------------------------------------------------------
 
 export interface MarrakechState {
+  /** 手番内の進行フェーズ */
+  turnPhase: GamePhase;
+
   /** 盤面: board[row][col] */
   board: CellState[][];
 
