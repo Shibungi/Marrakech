@@ -15,11 +15,17 @@ export const MarrakechGame: Game<MarrakechState> = {
   name: "marrakech",
   setup: () => createInitialState(),
   turn: {
-    minMoves: 1,
-    maxMoves: 4,
+    moveLimit: 4,
     order: {
       first: () => 0,
       next: ({ ctx }) => (Number(ctx.playOrderPos) + 1) % ctx.numPlayers,
+    },
+    activePlayers: { currentPlayer: "chooseDirection" },
+    stages: {
+      chooseDirection: { moves: { chooseDirection }, next: "moveAssam" },
+      moveAssam: { moves: { moveAssam }, next: "placeFirstTile" },
+      placeFirstTile: { moves: { placeFirstTile }, next: "placeSecondTile" },
+      placeSecondTile: { moves: { placeSecondTile } },
     },
     onBegin: ({ G }) => {
       G.turnPhase = "chooseDirection";
@@ -27,20 +33,16 @@ export const MarrakechGame: Game<MarrakechState> = {
       G.firstPlacement = null;
     },
   },
-  moves: {
-    chooseDirection,
-    moveAssam,
-    placeFirstTile,
-    placeSecondTile,
-  },
 };
 
 function chooseDirection({
   G,
   ctx,
+  events,
 }: {
   G: MarrakechState;
   ctx: Ctx;
+  events: { endStage: () => void };
 },
 target: { row: number; col: number }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "chooseDirection") return INVALID_MOVE;
@@ -56,14 +58,17 @@ target: { row: number; col: number }): void | "INVALID_MOVE" {
     detail: `${player} が向きを ${newDirection} に変更しました。`,
   });
   G.turnPhase = "moveAssam";
+  events.endStage();
 }
 
 function moveAssam({
   G,
   ctx,
+  events,
 }: {
   G: MarrakechState;
   ctx: Ctx;
+  events: { endStage: () => void };
 }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "moveAssam") return INVALID_MOVE;
 
@@ -75,14 +80,17 @@ function moveAssam({
     detail: `${player} が移動フェーズを完了しました。`,
   });
   G.turnPhase = "placeFirstTile";
+  events.endStage();
 }
 
 function placeFirstTile({
   G,
   ctx,
+  events,
 }: {
   G: MarrakechState;
   ctx: Ctx;
+  events: { endStage: () => void };
 }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeFirstTile") return INVALID_MOVE;
 
@@ -96,6 +104,7 @@ function placeFirstTile({
     detail: `${player} が1マス目配置フェーズを完了しました。`,
   });
   G.turnPhase = "placeSecondTile";
+  events.endStage();
 }
 
 function placeSecondTile({
@@ -118,6 +127,5 @@ function placeSecondTile({
     action: "placeSecondTile",
     detail: `${player} が2マス目配置フェーズを完了し、手番を終了しました。`,
   });
-  G.turnPhase = "chooseDirection";
   events.endTurn();
 }

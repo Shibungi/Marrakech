@@ -32,7 +32,8 @@ const TERRAIN_EMOJI: Record<string, string> = {
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const { assam, coins, board, log } = G;
   const maxCols = Math.max(...ROW_SIZES);
-  const currentPhase = G.turnPhase;
+  const currentStage = ctx.activePlayers?.[ctx.currentPlayer];
+  const currentPhase = currentStage ?? G.turnPhase;
 
   const phaseActionLabel: Record<string, string> = {
     chooseDirection: "隣接マスをクリックして向き変更",
