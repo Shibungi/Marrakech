@@ -4,6 +4,7 @@ import { INVALID_MOVE } from "boardgame.io/core";
 import type { MarrakechState, PlayerId } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
+import { directionFromNeighbor } from "./hex";
 
 function formatPlayer(playerID: string | null | undefined): string {
   if (playerID === undefined || playerID === null) return "unknown";
@@ -40,15 +41,19 @@ function chooseDirection({
 }: {
   G: MarrakechState;
   ctx: Ctx;
-}): void | "INVALID_MOVE" {
+},
+target: { row: number; col: number }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "chooseDirection") return INVALID_MOVE;
+  const newDirection = directionFromNeighbor(G.assam.position, target);
+  if (!newDirection) return INVALID_MOVE;
+  G.assam.direction = newDirection;
 
   const player = formatPlayer(ctx.currentPlayer);
   G.log.unshift({
     turn: ctx.turn,
     player: ctx.currentPlayer as PlayerId,
     action: "chooseDirection",
-    detail: `${player} が向き変更フェーズを完了しました。`,
+    detail: `${player} が向きを ${newDirection} に変更しました。`,
   });
   G.turnPhase = "moveAssam";
 }

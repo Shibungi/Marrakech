@@ -91,6 +91,8 @@ const AXIAL_DELTAS: Record<Direction, { dq: number; dr: number }> = {
   NW: { dq: 0, dr: -1 },
 };
 
+const DIRECTION_ORDER: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
+
 // ---------------------------------------------------------------------------
 // 隣接マス列挙
 // ---------------------------------------------------------------------------
@@ -149,16 +151,32 @@ export function oppositeDirection(dir: Direction): Direction {
  * 指定方向から時計回りに 1 ステップ回転した方向を返す
  */
 export function rotateClockwise(dir: Direction): Direction {
-  const order: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
-  const idx = order.indexOf(dir);
-  return order[(idx + 1) % 6];
+  const idx = DIRECTION_ORDER.indexOf(dir);
+  return DIRECTION_ORDER[(idx + 1) % 6];
 }
 
 /**
  * 指定方向から反時計回りに 1 ステップ回転した方向を返す
  */
 export function rotateCounterClockwise(dir: Direction): Direction {
-  const order: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
-  const idx = order.indexOf(dir);
-  return order[(idx + 5) % 6];
+  const idx = DIRECTION_ORDER.indexOf(dir);
+  return DIRECTION_ORDER[(idx + 5) % 6];
+}
+
+/**
+ * 隣接マスへの方向を返す。
+ * 隣接していない、または target が盤外の場合は null。
+ */
+export function directionFromNeighbor(
+  origin: HexCoord,
+  target: HexCoord,
+): Direction | null {
+  if (!isValidCell(origin) || !isValidCell(target)) return null;
+  for (const dir of DIRECTION_ORDER) {
+    const next = stepInDirection(origin, dir);
+    if (next && next.row === target.row && next.col === target.col) {
+      return dir;
+    }
+  }
+  return null;
 }

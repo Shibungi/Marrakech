@@ -5,6 +5,7 @@ import type { Ctx } from "boardgame.io";
 import { MarrakechGame } from "../game/MarrakechGame";
 import type { MarrakechState, PlayerId } from "../game/types";
 import { PLAYER_LABELS, ROW_SIZES } from "../game/types";
+import { directionFromNeighbor } from "../game/hex";
 
 type BoardProps = {
   G: MarrakechState;
@@ -34,17 +35,13 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const currentPhase = G.turnPhase;
 
   const phaseActionLabel: Record<string, string> = {
-    chooseDirection: "向き変更を確定",
+    chooseDirection: "隣接マスをクリックして向き変更",
     moveAssam: "移動を実行",
     placeFirstTile: "1マス目を配置",
     placeSecondTile: "2マス目を配置して手番終了",
   };
 
   const runPhaseMove = () => {
-    if (currentPhase === "chooseDirection") {
-      moves.chooseDirection?.();
-      return;
-    }
     if (currentPhase === "moveAssam") {
       moves.moveAssam?.();
       return;
@@ -57,6 +54,10 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
       moves.placeSecondTile?.();
     }
   };
+
+  const isDirectionCandidate = (row: number, col: number) =>
+    currentPhase === "chooseDirection" &&
+    directionFromNeighbor(assam.position, { row, col }) !== null;
 
   return (
     <main className="layout">
@@ -141,11 +142,17 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                 {row.map((cell, c) => {
                   const isAssam =
                     assam.position.row === r && assam.position.col === c;
+                  const canChooseDirection = isActive && isDirectionCandidate(r, c);
                   return (
                     <div
-                      className={`hex-cell ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""}`}
+                      className={`hex-cell ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""} ${canChooseDirection ? "clickable" : ""}`}
                       key={`${r}-${c}`}
                       title={`(${r},${c})${cell ? ` ${cell.terrain} [${PLAYER_LABELS[cell.owner]}]` : ""}${isAssam ? " ★Assam" : ""}`}
+                      onClick={() => {
+                        if (canChooseDirection) {
+                          moves.chooseDirection?.({ row: r, col: c });
+                        }
+                      }}
                     >
                       {isAssam ? "★" : cell ? TERRAIN_EMOJI[cell.terrain] ?? "?" : "·"}
                     </div>
@@ -165,7 +172,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
             className="primary-button"
             type="button"
             onClick={runPhaseMove}
-            disabled={!isActive}
+            disabled={!isActive || currentPhase === "chooseDirection"}
           >
             {phaseActionLabel[currentPhase] ?? "次へ"}
           </button>
