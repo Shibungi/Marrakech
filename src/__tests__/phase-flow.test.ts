@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Client } from "boardgame.io/client";
 
 import { MarrakechGame } from "../game/MarrakechGame";
+import { getNeighbors } from "../game/hex";
+
+function getCurrentStage(state: any) {
+  const s = state;
+  return s?.ctx.activePlayers?.[s?.ctx.currentPlayer ?? ""];
+}
 
 describe("MarrakechGame phase flow (Phase 4)", () => {
   it("chooseDirection → moveAssam → placeFirstTile → placeSecondTile の順で進む", () => {
@@ -9,16 +15,22 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     client.start();
 
     expect(client.getState()?.G.turnPhase).toBe("chooseDirection");
+    expect(getCurrentStage(client.getState())).toBe("chooseDirection");
 
-    client.moves.chooseDirection({ row: 2, col: 4 });
+    const origin = client.getState()!.G.assam.position;
+    const target = getNeighbors(origin)[0];
+    client.moves.chooseDirection(target);
     expect(client.getState()?.G.turnPhase).toBe("moveAssam");
+    expect(getCurrentStage(client.getState())).toBe("moveAssam");
     expect(client.getState()?.G.assam.direction).toBe("NE");
 
     client.moves.moveAssam();
     expect(client.getState()?.G.turnPhase).toBe("placeFirstTile");
+    expect(getCurrentStage(client.getState())).toBe("placeFirstTile");
 
     client.moves.placeFirstTile();
     expect(client.getState()?.G.turnPhase).toBe("placeSecondTile");
+    expect(getCurrentStage(client.getState())).toBe("placeSecondTile");
   });
 
   it("1ターン完了で次プレイヤーに手番が回る (A→B)", () => {
@@ -28,7 +40,9 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     expect(client.getState()?.ctx.currentPlayer).toBe("0");
     expect(client.getState()?.ctx.turn).toBe(1);
 
-    client.moves.chooseDirection({ row: 2, col: 4 });
+    const origin = client.getState()!.G.assam.position;
+    const target = getNeighbors(origin)[0];
+    client.moves.chooseDirection(target);
     client.moves.moveAssam();
     client.moves.placeFirstTile();
     client.moves.placeSecondTile();
@@ -36,6 +50,7 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     expect(client.getState()?.ctx.currentPlayer).toBe("1");
     expect(client.getState()?.ctx.turn).toBe(2);
     expect(client.getState()?.G.turnPhase).toBe("chooseDirection");
+    expect(getCurrentStage(client.getState())).toBe("chooseDirection");
   });
 
   it("フェーズ外の move は実行できない", () => {
