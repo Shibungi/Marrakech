@@ -258,6 +258,12 @@ select {
   font-size: 1.3rem;
 }
 
+.hex-cell.clickable {
+  cursor: pointer;
+  border-color: rgba(255, 184, 110, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 184, 110, 0.25) inset;
+}
+
 .log-list {
   margin: 0;
   padding-left: 18px;

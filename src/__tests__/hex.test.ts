@@ -7,6 +7,7 @@ import {
   oppositeDirection,
   rotateClockwise,
   rotateCounterClockwise,
+  directionFromNeighbor,
 } from "../game/hex";
 import { ROW_SIZES } from "../game/types";
 import type { HexCoord, Direction } from "../game/types";
@@ -221,6 +222,27 @@ describe("rotation", () => {
 
   it("NE → 反時計回り = NW", () => {
     expect(rotateCounterClockwise("NE")).toBe("NW");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// directionFromNeighbor
+// ---------------------------------------------------------------------------
+describe("directionFromNeighbor", () => {
+  it("中央から隣接マスを指定すると方向を返す", () => {
+    const origin: HexCoord = { row: 3, col: 3 };
+    const dirs: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
+    for (const dir of dirs) {
+      const target = stepInDirection(origin, dir);
+      expect(target).not.toBeNull();
+      expect(directionFromNeighbor(origin, target!)).toBe(dir);
+    }
+  });
+
+  it("隣接していないマスの場合は null", () => {
+    expect(directionFromNeighbor({ row: 3, col: 3 }, { row: 0, col: 0 })).toBe(
+      null,
+    );
   });
 });
 
