@@ -44,6 +44,7 @@ function createInitialTiles(): Record<PlayerId, Record<TerrainType, number>> {
 /** boardgame.io の setup() に渡す初期状態を生成 */
 export function createInitialState(): MarrakechState {
   return {
+    turnPhase: "chooseDirection",
     board: createEmptyBoard(),
     assam: {
       position: { row: 3, col: 3 },

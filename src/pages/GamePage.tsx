@@ -31,6 +31,32 @@ const TERRAIN_EMOJI: Record<string, string> = {
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const { assam, coins, board, log } = G;
   const maxCols = Math.max(...ROW_SIZES);
+  const currentPhase = G.turnPhase;
+
+  const phaseActionLabel: Record<string, string> = {
+    chooseDirection: "向き変更を確定",
+    moveAssam: "移動を実行",
+    placeFirstTile: "1マス目を配置",
+    placeSecondTile: "2マス目を配置して手番終了",
+  };
+
+  const runPhaseMove = () => {
+    if (currentPhase === "chooseDirection") {
+      moves.chooseDirection?.();
+      return;
+    }
+    if (currentPhase === "moveAssam") {
+      moves.moveAssam?.();
+      return;
+    }
+    if (currentPhase === "placeFirstTile") {
+      moves.placeFirstTile?.();
+      return;
+    }
+    if (currentPhase === "placeSecondTile") {
+      moves.placeSecondTile?.();
+    }
+  };
 
   return (
     <main className="layout">
@@ -40,7 +66,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
         <div className="status-grid">
           <article className="status-card">
             <span>Phase</span>
-            <strong>{ctx.phase ?? "—"}</strong>
+            <strong>{currentPhase}</strong>
           </article>
           <article className="status-card">
             <span>Current Player</span>
@@ -131,17 +157,17 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
         </div>
       </section>
 
-      {/* ---- Ping (暫定 move) ---- */}
+      {/* ---- Turn Action ---- */}
       <section className="panel">
         <div className="prototype-header">
           <p className="panel-title">Action</p>
           <button
             className="primary-button"
             type="button"
-            onClick={() => moves.ping?.()}
+            onClick={runPhaseMove}
             disabled={!isActive}
           >
-            ping
+            {phaseActionLabel[currentPhase] ?? "次へ"}
           </button>
         </div>
       </section>

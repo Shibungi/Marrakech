@@ -64,4 +64,8 @@ describe("createInitialState", () => {
   it("ログは空配列", () => {
     expect(state.log).toEqual([]);
   });
+
+  it("turnPhase は chooseDirection", () => {
+    expect(state.turnPhase).toBe("chooseDirection");
+  });
 });
