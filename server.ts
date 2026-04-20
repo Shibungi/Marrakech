@@ -1,15 +1,5 @@
-import { createRequire } from "node:module";
-
+import { Server } from "boardgame.io/server";
 import { MarrakechGame } from "./src/game/MarrakechGame";
-
-const require = createRequire(import.meta.url);
-const { Server } = require("boardgame.io/server") as {
-  Server: (options: {
-    games: unknown[];
-    origins?: string[];
-    apiOrigins?: string[];
-  }) => { run: (port: number) => Promise<unknown> };
-};
 
 function parseOriginList(value: string | undefined): string[] | undefined {
   const origins = value

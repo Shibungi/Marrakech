@@ -97,6 +97,8 @@ Start Command: npm run start:server
 
 Node.js は `20.x` を使ってください。このリポジトリの `boardgame.io` サーバー依存は Render の既定 `Node.js 22` では起動時に失敗します。`package.json` の `engines.node` と `.node-version` でも `20.x` に固定しています。
 
+また、Render 本番起動では `tsx` を直接使わず、`npm install` 時に `esbuild` で `dist-server/server.cjs` を生成してから `node dist-server/server.cjs` を起動します。ローカル開発用の `npm run dev:server` は引き続き `tsx server.ts` です。
+
 最初の作成時は、環境変数を以下のように入れてください。
 
 ```text
