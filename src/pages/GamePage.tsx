@@ -7,6 +7,7 @@ import { MarrakechGame } from "../game/MarrakechGame";
 import type { MarrakechState, PlayerId, TerrainType } from "../game/types";
 import { PLAYER_LABELS, ROW_SIZES } from "../game/types";
 import { directionFromNeighbor, getNeighbors } from "../game/hex";
+import { getGameServerUrl } from "../network";
 
 type BoardProps = {
   G: MarrakechState;
@@ -20,9 +21,10 @@ type BoardProps = {
 type GamePageProps = {
   matchID: string;
   playerID: string;
+  credentials?: string;
 };
 
-const SERVER_URL = import.meta.env.VITE_GAME_SERVER ?? "http://localhost:8000";
+const SERVER_URL = getGameServerUrl();
 
 const TERRAIN_EMOJI: Record<string, string> = {
   sea: "🌊",
@@ -228,6 +230,12 @@ const MarrakechClient = Client({
   multiplayer: SocketIO({ server: SERVER_URL }),
 });
 
-export function GamePage({ matchID, playerID }: GamePageProps) {
-  return <MarrakechClient matchID={matchID} playerID={playerID} />;
+export function GamePage({ matchID, playerID, credentials }: GamePageProps) {
+  return (
+    <MarrakechClient
+      matchID={matchID}
+      playerID={playerID}
+      credentials={credentials}
+    />
+  );
 }

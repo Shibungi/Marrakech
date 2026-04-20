@@ -19,8 +19,12 @@ function withBoard(state: MarrakechState): MarrakechState {
 	};
 }
 
+function createTestClient(game = MarrakechGame) {
+	return Client<MarrakechState>({ game, numPlayers: 3 });
+}
+
 /** 1 ターン分を実行するヘルパー */
-function playOneTurn(client: ReturnType<typeof Client>) {
+function playOneTurn(client: ReturnType<typeof createTestClient>) {
 	const state = client.getState()!;
 	const origin = state.G.assam.position;
 	const neighbors = getNeighbors(origin);
@@ -85,7 +89,7 @@ describe("calculateScores", () => {
 
 describe("endIf – ゲーム終了判定", () => {
 	it("タイルが残っている間はゲームが終了しない", () => {
-		const client = Client({ game: MarrakechGame, numPlayers: 3 });
+		const client = createTestClient();
 		client.start();
 		playOneTurn(client);
 
@@ -106,7 +110,7 @@ describe("endIf – ゲーム終了判定", () => {
 			},
 		};
 
-		const client = Client({ game: gameExhausted, numPlayers: 3 });
+		const client = createTestClient(gameExhausted);
 		client.start();
 
 		const state = client.getState()!;
@@ -125,7 +129,7 @@ describe("endIf – ゲーム終了判定", () => {
 			},
 		};
 
-		const client = Client({ game: gameOneExhausted, numPlayers: 3 });
+		const client = createTestClient(gameOneExhausted);
 		client.start();
 
 		expect(client.getState()!.ctx.currentPlayer).toBe("0");

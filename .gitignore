@@ -1,5 +1,6 @@
 node_modules
 dist
+.quick-tunnel/
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
