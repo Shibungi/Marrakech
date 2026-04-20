@@ -95,6 +95,8 @@ Build Command: npm install
 Start Command: npm run start:server
 ```
 
+Node.js は `20.x` を使ってください。このリポジトリの `boardgame.io` サーバー依存は Render の既定 `Node.js 22` では起動時に失敗します。`package.json` の `engines.node` と `.node-version` でも `20.x` に固定しています。
+
 最初の作成時は、環境変数を以下のように入れてください。
 
 ```text
