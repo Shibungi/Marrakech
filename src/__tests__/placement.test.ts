@@ -51,7 +51,7 @@ describe("MarrakechGame placement integration", () => {
     client.moves.chooseDirection(getNeighbors(origin)[0]);
     client.moves.moveAssam();
 
-  client.moves.placeFirstTile({ q: 0, r: -3 }, "sea");
+    client.moves.placeFirstTile({ q: 0, r: -3 }, "sea");
 
     const state = client.getState()!;
     expect(state.G.turnPhase).toBe("placeFirstTile");
