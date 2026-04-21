@@ -2,12 +2,26 @@ import type { MarrakechState, PlayerId, Tile, HexCoord } from "./types";
 import { getCell, toBoardKey } from "./board";
 import { getNeighbors, isValidCell } from "./hex";
 
-export function connectedComponentSize(
+const PLAYER_IDS: readonly PlayerId[] = ["0", "1", "2"];
+
+type ConnectedComponentStats = {
+  size: number;
+  ownerCounts: Record<PlayerId, number>;
+};
+
+function createOwnerCounts(): Record<PlayerId, number> {
+  return { "0": 0, "1": 0, "2": 0 };
+}
+
+function collectConnectedComponentStats(
   board: MarrakechState["board"],
   start: HexCoord,
-  tile: Tile,
-): number {
-  if (!isValidCell(start)) return 0;
+  terrain: Tile["terrain"],
+): ConnectedComponentStats {
+  const ownerCounts = createOwnerCounts();
+  if (!isValidCell(start)) {
+    return { size: 0, ownerCounts };
+  }
 
   const visited = new Set<string>();
   const queue: HexCoord[] = [start];
@@ -20,15 +34,13 @@ export function connectedComponentSize(
     visited.add(key);
 
     const currentTile = getCell(board, current);
-    if (
-      currentTile === null ||
-      currentTile.owner !== tile.owner ||
-      currentTile.terrain !== tile.terrain
-    ) {
+    if (currentTile === null || currentTile.terrain !== terrain) {
       continue;
     }
 
     size += 1;
+    ownerCounts[currentTile.owner] += 1;
+
     for (const next of getNeighbors(current)) {
       const nextKey = toBoardKey(next);
       if (!visited.has(nextKey)) {
@@ -37,12 +49,33 @@ export function connectedComponentSize(
     }
   }
 
-  return size;
+  return { size, ownerCounts };
 }
+
+export function connectedComponentSize(
+  board: MarrakechState["board"],
+  start: HexCoord,
+  tile: Tile,
+): number {
+  return collectConnectedComponentStats(board, start, tile.terrain).size;
+}
+
+export function connectedComponentOwnerCounts(
+  board: MarrakechState["board"],
+  start: HexCoord,
+  tile: Tile,
+): Record<PlayerId, number> {
+  return collectConnectedComponentStats(board, start, tile.terrain).ownerCounts;
+}
+
+type PaymentTransfer = {
+  payee: PlayerId;
+  amount: number;
+};
 
 type PaymentResult = {
   paid: boolean;
-  payee: PlayerId | null;
+  transfers: PaymentTransfer[];
   amount: number;
 };
 
@@ -52,18 +85,35 @@ export function applyLandingPayment(
 ): PaymentResult {
   const landing = G.assam.position;
   const landingTile = getCell(G.board, landing);
-  if (landingTile === null || landingTile.owner === currentPlayer) {
-    return { paid: false, payee: null, amount: 0 };
+  if (landingTile === null) {
+    return { paid: false, transfers: [], amount: 0 };
   }
 
-  const amount = connectedComponentSize(G.board, landing, landingTile);
-  const payable = Math.min(G.coins[currentPlayer], amount);
-  G.coins[currentPlayer] -= payable;
-  G.coins[landingTile.owner] += payable;
+  const ownerCounts = connectedComponentOwnerCounts(G.board, landing, landingTile);
+  const currentPlayerCount = ownerCounts[currentPlayer];
+  const transfers: PaymentTransfer[] = [];
+  let remainingCoins = G.coins[currentPlayer];
+
+  for (const payee of PLAYER_IDS) {
+    if (payee === currentPlayer) continue;
+
+    const owed = ownerCounts[payee] - currentPlayerCount;
+    if (owed <= 0) continue;
+
+    const paid = Math.min(remainingCoins, owed);
+    if (paid <= 0) break;
+
+    G.coins[currentPlayer] -= paid;
+    G.coins[payee] += paid;
+    remainingCoins -= paid;
+    transfers.push({ payee, amount: paid });
+  }
+
+  const totalPaid = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
 
   return {
-    paid: payable > 0,
-    payee: landingTile.owner,
-    amount: payable,
+    paid: totalPaid > 0,
+    transfers,
+    amount: totalPaid,
   };
 }

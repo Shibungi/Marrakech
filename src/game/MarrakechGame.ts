@@ -135,8 +135,10 @@ function moveAssam({
         .map((redirect) => `${formatHexCoord(redirect.at)} ${redirect.from}→${redirect.to}`)
         .join(", ")}`;
   const paymentDetail =
-    payment.paid && payment.payee !== null
-      ? ` / 支払い: ${player} → ${formatPlayer(payment.payee)} に ${payment.amount}`
+    payment.paid
+      ? ` / 支払い: ${player} → ${payment.transfers
+        .map((transfer) => `${formatPlayer(transfer.payee)} に ${transfer.amount}`)
+        .join(", ")}`
       : "";
 
   G.log.unshift({
