@@ -319,6 +319,7 @@ select {
 /* ---- Hex Board ---- */
 
 .hex-board {
+  --hex-shape: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
   --hex-width: 72px;
   --hex-height: 62px;
   --hex-gap: 8px;
@@ -346,53 +347,155 @@ select {
 .hex-cell {
   width: var(--hex-width);
   height: var(--hex-height);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  clip-path: var(--hex-shape);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  border: 1px solid rgba(255, 244, 220, 0.18);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 38%),
-    rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  isolation: isolate;
+  border: 2px solid rgba(40, 24, 18, 0.62);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
   color: var(--text);
   cursor: default;
   user-select: none;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 10px 18px rgba(0, 0, 0, 0.18);
+    0 14px 20px rgba(0, 0, 0, 0.24);
   transition:
     transform 140ms ease,
     border-color 140ms ease,
     box-shadow 140ms ease;
 }
 
+.hex-cell::before,
+.hex-cell::after,
+.hex-surface,
+.hex-owner-badge,
+.hex-assam-token {
+  pointer-events: none;
+}
+
+.hex-cell::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  clip-path: var(--hex-shape);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 42%);
+  opacity: 0.65;
+  z-index: 0;
+}
+
+.hex-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 11, 8, 0) 48%, rgba(22, 14, 10, 0.45) 100%);
+  z-index: 1;
+}
+
+.hex-surface {
+  position: absolute;
+  inset: 3px;
+  clip-path: var(--hex-shape);
+  z-index: 0;
+}
+
+.hex-surface::before,
+.hex-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
 .hex-cell.empty {
+  border-color: rgba(65, 34, 21, 0.78);
+  background: linear-gradient(180deg, rgba(94, 47, 28, 0.78), rgba(66, 31, 19, 0.9));
+}
+
+.hex-cell.empty .hex-surface::before {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
-    rgba(34, 24, 20, 0.55);
-  border-color: rgba(255, 230, 200, 0.14);
+    radial-gradient(circle at 22% 22%, rgba(255, 178, 112, 0.22), transparent 18%),
+    radial-gradient(circle at 68% 32%, rgba(255, 215, 164, 0.1), transparent 12%),
+    radial-gradient(circle at 78% 72%, rgba(55, 24, 13, 0.38), transparent 18%),
+    linear-gradient(165deg, #b76032, #82371a 70%);
+}
+
+.hex-cell.empty .hex-surface::after {
+  background:
+    radial-gradient(circle at 28% 68%, rgba(255, 240, 223, 0.1), transparent 7%),
+    radial-gradient(circle at 50% 48%, rgba(255, 240, 223, 0.07), transparent 6%),
+    radial-gradient(circle at 74% 58%, rgba(255, 240, 223, 0.08), transparent 8%);
+  mix-blend-mode: screen;
 }
 
 .hex-cell.terrain-sea {
+  border-color: rgba(13, 79, 123, 0.95);
+  background: linear-gradient(180deg, rgba(126, 222, 255, 0.1), rgba(24, 67, 108, 0.08));
+}
+
+.hex-cell.terrain-sea .hex-surface::before {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02) 40%),
-    linear-gradient(160deg, #2d95c8, #1f5e9a 72%);
-  border-color: rgba(150, 220, 255, 0.5);
+    radial-gradient(circle at 32% 18%, rgba(255, 255, 255, 0.18), transparent 20%),
+    linear-gradient(180deg, #3b99df 0%, #1d72bb 48%, #08418a 100%);
+}
+
+.hex-cell.terrain-sea .hex-surface::after {
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      rgba(255, 255, 255, 0.26) 0 2px,
+      rgba(255, 255, 255, 0.04) 2px 9px
+    ),
+    repeating-linear-gradient(
+      12deg,
+      rgba(35, 118, 196, 0.18) 0 5px,
+      rgba(35, 118, 196, 0) 5px 12px
+    );
+  opacity: 0.75;
 }
 
 .hex-cell.terrain-mountain {
+  border-color: rgba(48, 88, 18, 0.92);
+  background: linear-gradient(180deg, rgba(204, 255, 122, 0.08), rgba(20, 46, 8, 0.06));
+}
+
+.hex-cell.terrain-mountain .hex-surface::before {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02) 38%),
-    linear-gradient(160deg, #7d6753, #4e3629 72%);
-  border-color: rgba(225, 197, 171, 0.45);
+    linear-gradient(160deg, #79c43d 0%, #4f9d26 58%, #2d6d16 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+}
+
+.hex-cell.terrain-mountain .hex-surface::after {
+  background:
+    linear-gradient(145deg, transparent 0 16%, rgba(18, 64, 10, 0.62) 16% 32%, transparent 32% 100%),
+    linear-gradient(35deg, transparent 0 30%, rgba(189, 241, 92, 0.48) 30% 43%, transparent 43% 100%),
+    linear-gradient(115deg, transparent 0 42%, rgba(33, 84, 14, 0.72) 42% 58%, transparent 58% 100%),
+    linear-gradient(70deg, transparent 0 54%, rgba(151, 224, 73, 0.4) 54% 68%, transparent 68% 100%);
+  opacity: 0.9;
 }
 
 .hex-cell.terrain-city {
+  border-color: rgba(90, 94, 105, 0.95);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(70, 72, 79, 0.08));
+}
+
+.hex-cell.terrain-city .hex-surface::before {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03) 38%),
-    linear-gradient(160deg, #d48a34, #9a4f28 72%);
-  border-color: rgba(255, 214, 130, 0.48);
+    linear-gradient(160deg, #b7bcc5 0%, #888d97 45%, #646976 100%);
+}
+
+.hex-cell.terrain-city .hex-surface::after {
+  background:
+    linear-gradient(90deg, transparent 0 12%, rgba(255, 255, 255, 0.18) 12% 18%, transparent 18% 100%),
+    linear-gradient(180deg, transparent 0 18%, rgba(60, 62, 70, 0.55) 18% 26%, transparent 26% 100%),
+    radial-gradient(circle at 26% 32%, #d9dde4 0 11%, transparent 12%),
+    radial-gradient(circle at 46% 58%, #7a7f89 0 12%, transparent 13%),
+    radial-gradient(circle at 68% 34%, #c8ccd3 0 11%, transparent 12%),
+    radial-gradient(circle at 74% 66%, #777c87 0 10%, transparent 11%),
+    radial-gradient(circle at 40% 28%, #8b909b 0 8%, transparent 9%),
+    radial-gradient(circle at 56% 80%, #a7acb5 0 9%, transparent 10%);
+  opacity: 0.95;
 }
 
 .hex-cell.assam {
@@ -418,50 +521,55 @@ select {
 
 .hex-owner-badge {
   position: absolute;
-  top: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
+  top: 7px;
+  right: 9px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  clip-path: polygon(50% 0%, 100% 30%, 86% 100%, 14% 100%, 0% 30%);
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  line-height: 1;
   color: #fffdf8;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 9px rgba(0, 0, 0, 0.28);
+  z-index: 3;
 }
 
 .hex-owner-badge.owner-0 {
-  background: var(--player-0);
+  background: linear-gradient(180deg, #ff7e69, #d4342b 78%);
 }
 
 .hex-owner-badge.owner-1 {
-  background: var(--player-1);
+  background: linear-gradient(180deg, #70d5ff, #188eb8 78%);
 }
 
 .hex-owner-badge.owner-2 {
-  background: var(--player-2);
+  background: linear-gradient(180deg, #ffe95c, #e9b60e 78%);
   color: #2d1d12;
 }
 
 .hex-assam-token {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1rem;
+  font-weight: 700;
   color: #fff6ea;
-  background: radial-gradient(circle at 35% 35%, #ffca92, #f59d52 68%, #d56d2f 100%);
+  background:
+    radial-gradient(circle at 35% 30%, #fff5ea, #ffd9b1 28%, transparent 29%),
+    radial-gradient(circle at 48% 44%, #ff9d50 0, #e8681f 70%, #a93d00 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 8px 14px rgba(0, 0, 0, 0.28);
+  z-index: 2;
 }
 
 .log-list {
@@ -508,16 +616,16 @@ select {
   }
 
   .hex-owner-badge {
-    top: 4px;
-    min-width: 17px;
-    height: 17px;
-    padding: 0 4px;
-    font-size: 0.62rem;
+    top: 5px;
+    right: 7px;
+    width: 15px;
+    height: 15px;
+    font-size: 0.5rem;
   }
 
   .hex-assam-token {
     width: 24px;
     height: 24px;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
   }
 }

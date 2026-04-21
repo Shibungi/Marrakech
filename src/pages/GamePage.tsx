@@ -167,6 +167,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                         }
                       }}
                     >
+                      <span className="hex-surface" aria-hidden="true" />
                       {cell && (
                         <span
                           className={`hex-owner-badge owner-${cell.owner}`}
