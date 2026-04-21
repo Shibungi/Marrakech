@@ -1,6 +1,7 @@
 import { Client } from "boardgame.io/react";
 import { SocketIO } from "boardgame.io/multiplayer";
 import type { Ctx } from "boardgame.io";
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
 import { MarrakechGame } from "../game/MarrakechGame";
@@ -25,12 +26,6 @@ type GamePageProps = {
 };
 
 const SERVER_URL = getGameServerUrl();
-
-const TERRAIN_EMOJI: Record<string, string> = {
-  sea: "🌊",
-  mountain: "⛰️",
-  city: "🏙️",
-};
 
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const { assam, coins, board, log } = G;
@@ -147,7 +142,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
               <div
                 className="hex-row"
                 key={r}
-                style={{ paddingLeft: `${offset * 22}px` }}
+                style={{ "--row-offset-steps": offset } as CSSProperties}
               >
                 {row.map((cell, c) => {
                   const isAssam =
@@ -172,7 +167,19 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                         }
                       }}
                     >
-                      {isAssam ? "★" : cell ? TERRAIN_EMOJI[cell.terrain] ?? "?" : "·"}
+                      {cell && (
+                        <span
+                          className={`hex-owner-badge owner-${cell.owner}`}
+                          aria-label={`Owner ${PLAYER_LABELS[cell.owner]}`}
+                        >
+                          {PLAYER_LABELS[cell.owner]}
+                        </span>
+                      )}
+                      {isAssam && (
+                        <span className="hex-assam-token" aria-hidden="true">
+                          ★
+                        </span>
+                      )}
                     </div>
                   );
                 })}
