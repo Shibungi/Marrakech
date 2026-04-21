@@ -23,16 +23,16 @@ export const INITIAL_COINS = 30;
 // 盤面
 // ---------------------------------------------------------------------------
 
-/** 六角形マップの行ごとのマス数（7 段: 4-5-6-7-6-5-4） */
-export const ROW_SIZES = [4, 5, 6, 7, 6, 5, 4] as const;
+/** 六角盤面の半径（中心から各辺まで 3 マス） */
+export const BOARD_RADIUS = 3;
 
-/** 行数 */
-export const NUM_ROWS = ROW_SIZES.length; // 7
+/** 総マス数 */
+export const BOARD_CELL_COUNT = 37;
 
-/** 六角座標 (row, col) */
+/** 六角座標 (axial q, r) */
 export interface HexCoord {
-  row: number;
-  col: number;
+  q: number;
+  r: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +50,9 @@ export interface Tile {
 
 /** 盤面の 1 マス – タイルが無い場合は null */
 export type CellState = Tile | null;
+
+/** 盤面全体 – axial 座標キーごとのセル状態 */
+export type BoardState = Record<string, CellState>;
 
 // ---------------------------------------------------------------------------
 // アッサム
@@ -107,8 +110,8 @@ export interface MarrakechState {
   /** 手番内の進行フェーズ */
   turnPhase: GamePhase;
 
-  /** 盤面: board[row][col] */
-  board: CellState[][];
+  /** 盤面: board["q,r"] */
+  board: BoardState;
 
   /** アッサム */
   assam: AssamState;

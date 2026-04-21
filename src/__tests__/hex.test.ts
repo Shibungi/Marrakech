@@ -9,42 +9,35 @@ import {
   rotateCounterClockwise,
   directionFromNeighbor,
 } from "../game/hex";
-import { ROW_SIZES } from "../game/types";
 import type { HexCoord, Direction } from "../game/types";
+import { sameHex, toBoardKey } from "../game/board";
 
 // ---------------------------------------------------------------------------
 // isValidCell
 // ---------------------------------------------------------------------------
 describe("isValidCell", () => {
-  it("中央マス (3,3) は有効", () => {
-    expect(isValidCell({ row: 3, col: 3 })).toBe(true);
+  it("中央マス (0,0) は有効", () => {
+    expect(isValidCell({ q: 0, r: 0 })).toBe(true);
   });
 
-  it("各行の先頭 (row, 0) は有効", () => {
-    for (let row = 0; row < 7; row++) {
-      expect(isValidCell({ row, col: 0 })).toBe(true);
+  it("6 つの角マスは有効", () => {
+    const corners: HexCoord[] = [
+      { q: 0, r: -3 },
+      { q: 3, r: -3 },
+      { q: 3, r: 0 },
+      { q: 0, r: 3 },
+      { q: -3, r: 3 },
+      { q: -3, r: 0 },
+    ];
+    for (const corner of corners) {
+      expect(isValidCell(corner)).toBe(true);
     }
   });
 
-  it("各行の末尾は有効", () => {
-    for (let row = 0; row < 7; row++) {
-      expect(isValidCell({ row, col: ROW_SIZES[row] - 1 })).toBe(true);
-    }
-  });
-
-  it("各行の末尾+1 は無効", () => {
-    for (let row = 0; row < 7; row++) {
-      expect(isValidCell({ row, col: ROW_SIZES[row] })).toBe(false);
-    }
-  });
-
-  it("負の行/列は無効", () => {
-    expect(isValidCell({ row: -1, col: 0 })).toBe(false);
-    expect(isValidCell({ row: 0, col: -1 })).toBe(false);
-  });
-
-  it("行が 7 以上は無効", () => {
-    expect(isValidCell({ row: 7, col: 0 })).toBe(false);
+  it("半径 3 を超える座標は無効", () => {
+    expect(isValidCell({ q: 4, r: 0 })).toBe(false);
+    expect(isValidCell({ q: 0, r: -4 })).toBe(false);
+    expect(isValidCell({ q: 2, r: 2 })).toBe(false);
   });
 });
 
@@ -66,7 +59,7 @@ describe("getAllCells", () => {
 
   it("重複がない", () => {
     const cells = getAllCells();
-    const keys = new Set(cells.map((c) => `${c.row},${c.col}`));
+    const keys = new Set(cells.map((c) => toBoardKey(c)));
     expect(keys.size).toBe(cells.length);
   });
 });
@@ -75,62 +68,47 @@ describe("getAllCells", () => {
 // getNeighbors
 // ---------------------------------------------------------------------------
 describe("getNeighbors", () => {
-  it("中央マス (3,3) は 6 つの隣接マスを持つ", () => {
-    const neighbors = getNeighbors({ row: 3, col: 3 });
+  it("中央マス (0,0) は 6 つの隣接マスを持つ", () => {
+    const neighbors = getNeighbors({ q: 0, r: 0 });
     expect(neighbors).toHaveLength(6);
-    // すべて有効
     for (const n of neighbors) {
       expect(isValidCell(n)).toBe(true);
     }
   });
 
-  it("角マス (0,0) の隣接は 3 つ", () => {
-    const neighbors = getNeighbors({ row: 0, col: 0 });
+  it("角マス (0,-3) の隣接は 3 つ", () => {
+    const neighbors = getNeighbors({ q: 0, r: -3 });
     expect(neighbors).toHaveLength(3);
   });
 
-  it("角マス (0,3) の隣接は 3 つ", () => {
-    const neighbors = getNeighbors({ row: 0, col: 3 });
+  it("角マス (3,-3) の隣接は 3 つ", () => {
+    const neighbors = getNeighbors({ q: 3, r: -3 });
     expect(neighbors).toHaveLength(3);
   });
 
-  it("辺マス (1,0) の隣接数を確認", () => {
-    const neighbors = getNeighbors({ row: 1, col: 0 });
-    expect(neighbors.length).toBeGreaterThanOrEqual(2);
-    expect(neighbors.length).toBeLessThanOrEqual(6);
+  it("辺マス (1,-3) の隣接数を確認", () => {
+    const neighbors = getNeighbors({ q: 1, r: -3 });
+    expect(neighbors).toHaveLength(4);
     for (const n of neighbors) {
       expect(isValidCell(n)).toBe(true);
     }
   });
 
   it("隣接関係は対称: A が B の隣接なら B も A の隣接", () => {
-    const center: HexCoord = { row: 3, col: 3 };
+    const center: HexCoord = { q: 0, r: 0 };
     const neighbors = getNeighbors(center);
     for (const n of neighbors) {
       const reverseNeighbors = getNeighbors(n);
-      const found = reverseNeighbors.some(
-        (rn) => rn.row === center.row && rn.col === center.col,
-      );
+      const found = reverseNeighbors.some((rn) => sameHex(rn, center));
       expect(found).toBe(true);
     }
   });
 
-  it("(3,0) の隣接は正しい", () => {
-    // Row 3 has 7 cells (0..6), so (3,0) is the leftmost cell in the center row
-    const neighbors = getNeighbors({ row: 3, col: 0 });
-    // Should have neighbors: (2,0), (4,0) at minimum
-    expect(neighbors.length).toBeGreaterThanOrEqual(2);
-    for (const n of neighbors) {
-      expect(isValidCell(n)).toBe(true);
-    }
-  });
-
   it("上下対称なマスで隣接数が一致する", () => {
-    // 上端と下端の対応セルは同じ隣接数になるべき
-    expect(getNeighbors({ row: 0, col: 0 })).toHaveLength(3);
-    expect(getNeighbors({ row: 6, col: 0 })).toHaveLength(3);
-    expect(getNeighbors({ row: 1, col: 2 })).toHaveLength(6);
-    expect(getNeighbors({ row: 5, col: 2 })).toHaveLength(6);
+    expect(getNeighbors({ q: 0, r: -3 })).toHaveLength(3);
+    expect(getNeighbors({ q: 0, r: 3 })).toHaveLength(3);
+    expect(getNeighbors({ q: 1, r: -1 })).toHaveLength(6);
+    expect(getNeighbors({ q: -1, r: 1 })).toHaveLength(6);
   });
 });
 
@@ -138,39 +116,36 @@ describe("getNeighbors", () => {
 // stepInDirection
 // ---------------------------------------------------------------------------
 describe("stepInDirection", () => {
-  it("中央 (3,3) から NE に進むと有効なマス", () => {
-    const result = stepInDirection({ row: 3, col: 3 }, "NE");
+  it("中央 (0,0) から NE に進むと有効なマス", () => {
+    const result = stepInDirection({ q: 0, r: 0 }, "NE");
     expect(result).not.toBeNull();
     expect(isValidCell(result!)).toBe(true);
   });
 
-  it("中央 (3,3) から全方向に進めるマスがある", () => {
+  it("中央 (0,0) から全方向に進めるマスがある", () => {
     const dirs: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
     for (const d of dirs) {
-      const result = stepInDirection({ row: 3, col: 3 }, d);
+      const result = stepInDirection({ q: 0, r: 0 }, d);
       expect(result).not.toBeNull();
       expect(isValidCell(result!)).toBe(true);
     }
   });
 
   it("stepInDirection の結果は getNeighbors に含まれる", () => {
-    const coord: HexCoord = { row: 3, col: 3 };
+    const coord: HexCoord = { q: 0, r: 0 };
     const neighbors = getNeighbors(coord);
     const dirs: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
     for (const d of dirs) {
       const result = stepInDirection(coord, d);
       if (result) {
-        const found = neighbors.some(
-          (n) => n.row === result.row && n.col === result.col,
-        );
+        const found = neighbors.some((n) => sameHex(n, result));
         expect(found).toBe(true);
       }
     }
   });
 
   it("盤端から外に出る方向は null を返す", () => {
-    // (0,0) から NW は盤外
-    const result = stepInDirection({ row: 0, col: 0 }, "NW");
+    const result = stepInDirection({ q: 0, r: -3 }, "NW");
     expect(result).toBeNull();
   });
 });
@@ -238,7 +213,7 @@ describe("rotation", () => {
 // ---------------------------------------------------------------------------
 describe("directionFromNeighbor", () => {
   it("中央から隣接マスを指定すると方向を返す", () => {
-    const origin: HexCoord = { row: 3, col: 3 };
+    const origin: HexCoord = { q: 0, r: 0 };
     const dirs: Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
     for (const dir of dirs) {
       const target = stepInDirection(origin, dir);
@@ -248,9 +223,7 @@ describe("directionFromNeighbor", () => {
   });
 
   it("隣接していないマスの場合は null", () => {
-    expect(directionFromNeighbor({ row: 3, col: 3 }, { row: 0, col: 0 })).toBe(
-      null,
-    );
+    expect(directionFromNeighbor({ q: 0, r: 0 }, { q: 3, r: -3 })).toBe(null);
   });
 });
 
@@ -263,13 +236,9 @@ describe("盤面全体の隣接整合性", () => {
     for (const cell of allCells) {
       const neighbors = getNeighbors(cell);
       for (const n of neighbors) {
-        // 隣接マスは有効
         expect(isValidCell(n)).toBe(true);
-        // 対称性チェック
         const reverse = getNeighbors(n);
-        const found = reverse.some(
-          (r) => r.row === cell.row && r.col === cell.col,
-        );
+        const found = reverse.some((r) => sameHex(r, cell));
         expect(found).toBe(true);
       }
     }

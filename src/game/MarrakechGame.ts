@@ -3,10 +3,11 @@ import type { Ctx, Game } from "boardgame.io";
 import type { MarrakechState, PlayerId, PlayerScore } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
-import { directionFromNeighbor, getNeighbors } from "./hex";
+import { directionFromNeighbor, formatHexCoord, getAllCells, getNeighbors } from "./hex";
 import { moveAssamWithBounce } from "./movement";
 import { applyLandingPayment } from "./payment";
 import type { TerrainType } from "./types";
+import { getCell, sameHex, setCell } from "./board";
 
 const INVALID_MOVE = "INVALID_MOVE";
 
@@ -25,9 +26,10 @@ export function canPlaceTiles(G: MarrakechState, player: PlayerId): boolean {
 export function calculateScores(G: MarrakechState): PlayerScore[] {
   const scores: PlayerScore[] = (["0", "1", "2"] as PlayerId[]).map((id) => {
     let tilesOnBoard = 0;
-    for (const row of G.board) {
-      for (const cell of row) {
-        if (cell && cell.owner === id) tilesOnBoard++;
+    for (const cell of getAllCells()) {
+      const tile = getCell(G.board, cell);
+      if (tile && tile.owner === id) {
+        tilesOnBoard += 1;
       }
     }
     return {
@@ -81,7 +83,7 @@ function chooseDirection({
   ctx: Ctx;
   events: { endStage: () => void };
 },
-  target: { row: number; col: number }): void | "INVALID_MOVE" {
+  target: { q: number; r: number }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "chooseDirection") return INVALID_MOVE;
   const newDirection = directionFromNeighbor(G.assam.position, target);
   if (!newDirection) return INVALID_MOVE;
@@ -130,7 +132,7 @@ function moveAssam({
     result.redirects.length === 0
       ? ""
       : ` / 盤外回避: ${result.redirects
-        .map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}→${redirect.to}`)
+        .map((redirect) => `${formatHexCoord(redirect.at)} ${redirect.from}→${redirect.to}`)
         .join(", ")}`;
   const paymentDetail =
     payment.paid && payment.payee !== null
@@ -141,7 +143,7 @@ function moveAssam({
     turn: ctx.turn,
     player: ctx.currentPlayer as PlayerId,
     action: "moveAssam",
-    detail: `${player} が ${steps} マス移動し (${result.position.row},${result.position.col}) に到達。向き: ${result.direction}${redirectDetail}${paymentDetail}`,
+    detail: `${player} が ${steps} マス移動し ${formatHexCoord(result.position)} に到達。向き: ${result.direction}${redirectDetail}${paymentDetail}`,
   });
   const currentPlayer = ctx.currentPlayer as PlayerId;
   if (!canPlaceTiles(G, currentPlayer)) {
@@ -167,19 +169,19 @@ function placeFirstTile({
   ctx: Ctx;
   events: { endStage: () => void };
 },
-  target: { row: number; col: number },
+  target: { q: number; r: number },
   terrain: TerrainType,
 ): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeFirstTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer as PlayerId;
   const isAdjacentToAssam = getNeighbors(G.assam.position).some(
-    (neighbor) => neighbor.row === target.row && neighbor.col === target.col,
+    (neighbor) => sameHex(neighbor, target),
   );
   if (!isAdjacentToAssam) return INVALID_MOVE;
   if (G.tiles[currentPlayer][terrain] < 2) return INVALID_MOVE;
 
   const player = formatPlayer(ctx.currentPlayer);
-  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  setCell(G.board, target, { terrain, owner: currentPlayer });
   G.tiles[currentPlayer][terrain] -= 1;
   G.selectedTerrain = terrain;
   G.firstPlacement = { ...target };
@@ -187,7 +189,7 @@ function placeFirstTile({
     turn: ctx.turn,
     player: currentPlayer,
     action: "placeFirstTile",
-    detail: `${player} が ${terrain} を (${target.row},${target.col}) に配置しました。`,
+    detail: `${player} が ${terrain} を ${formatHexCoord(target)} に配置しました。`,
   });
   G.turnPhase = "placeSecondTile";
   events.endStage();
@@ -202,23 +204,23 @@ function placeSecondTile({
   ctx: Ctx;
   events: { endTurn: () => void };
 },
-  target: { row: number; col: number },
+  target: { q: number; r: number },
 ): void | "INVALID_MOVE" {
   if (G.turnPhase !== "placeSecondTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer as PlayerId;
   if (G.selectedTerrain === null || G.firstPlacement === null) return INVALID_MOVE;
-  if (target.row === G.assam.position.row && target.col === G.assam.position.col) {
+  if (sameHex(target, G.assam.position)) {
     return INVALID_MOVE;
   }
   const isAdjacentToFirst = getNeighbors(G.firstPlacement).some(
-    (neighbor) => neighbor.row === target.row && neighbor.col === target.col,
+    (neighbor) => sameHex(neighbor, target),
   );
   if (!isAdjacentToFirst) return INVALID_MOVE;
   if (G.tiles[currentPlayer][G.selectedTerrain] < 1) return INVALID_MOVE;
 
   const player = formatPlayer(ctx.currentPlayer);
   const terrain = G.selectedTerrain;
-  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  setCell(G.board, target, { terrain, owner: currentPlayer });
   G.tiles[currentPlayer][terrain] -= 1;
   G.selectedTerrain = null;
   G.firstPlacement = null;
@@ -226,7 +228,7 @@ function placeSecondTile({
     turn: ctx.turn,
     player: currentPlayer,
     action: "placeSecondTile",
-    detail: `${player} が ${terrain} を (${target.row},${target.col}) に配置して手番を終了しました。`,
+    detail: `${player} が ${terrain} を ${formatHexCoord(target)} に配置して手番を終了しました。`,
   });
   events.endTurn();
 }

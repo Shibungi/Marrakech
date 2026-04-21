@@ -1,32 +1,25 @@
 import { describe, it, expect } from "vitest";
 import { createInitialState } from "../game/setup";
-import { ROW_SIZES, INITIAL_COINS } from "../game/types";
+import { BOARD_CELL_COUNT, INITIAL_COINS } from "../game/types";
 import type { PlayerId } from "../game/types";
-import { isValidCell } from "../game/hex";
+import { getAllCells, isValidCell } from "../game/hex";
+import { getCell } from "../game/board";
 
 describe("createInitialState", () => {
   const state = createInitialState();
 
-  it("盤面の行数が 7", () => {
-    expect(state.board).toHaveLength(7);
-  });
-
-  it("各行のマス数が ROW_SIZES に一致", () => {
-    for (let row = 0; row < 7; row++) {
-      expect(state.board[row]).toHaveLength(ROW_SIZES[row]);
-    }
+  it("盤面の総マス数が 37", () => {
+    expect(Object.keys(state.board)).toHaveLength(BOARD_CELL_COUNT);
   });
 
   it("初期盤面はすべて null", () => {
-    for (const row of state.board) {
-      for (const cell of row) {
-        expect(cell).toBeNull();
-      }
+    for (const cell of getAllCells()) {
+      expect(getCell(state.board, cell)).toBeNull();
     }
   });
 
-  it("アッサム初期位置は (3,3)", () => {
-    expect(state.assam.position).toEqual({ row: 3, col: 3 });
+  it("アッサム初期位置は (0,0)", () => {
+    expect(state.assam.position).toEqual({ q: 0, r: 0 });
   });
 
   it("アッサム初期位置は有効マス", () => {

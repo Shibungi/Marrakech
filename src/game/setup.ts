@@ -6,16 +6,17 @@ import {
   type MarrakechState,
   type PlayerId,
   type TerrainType,
-  ROW_SIZES,
   INITIAL_COINS,
 } from "./types";
+import { getAllCells } from "./hex";
+import { toBoardKey } from "./board";
 
 /** 各プレイヤーの初期タイル枚数（地形タイプ別） */
 const INITIAL_TILE_COUNT = 4;
 
 /** 空の盤面を生成する */
 function createEmptyBoard(): MarrakechState["board"] {
-  return ROW_SIZES.map((size) => Array.from({ length: size }, () => null));
+  return Object.fromEntries(getAllCells().map((cell) => [toBoardKey(cell), null]));
 }
 
 /** 初期所持金を生成 */
@@ -47,7 +48,7 @@ export function createInitialState(): MarrakechState {
     turnPhase: "chooseDirection",
     board: createEmptyBoard(),
     assam: {
-      position: { row: 3, col: 3 },
+      position: { q: 0, r: 0 },
       direction: "NE",
     },
     coins: createInitialCoins(),

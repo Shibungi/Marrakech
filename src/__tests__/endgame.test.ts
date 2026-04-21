@@ -5,11 +5,12 @@ import { MarrakechGame, canPlaceTiles, calculateScores } from "../game/Marrakech
 import { getNeighbors } from "../game/hex";
 import { createInitialState } from "../game/setup";
 import type { MarrakechState, PlayerId } from "../game/types";
+import { cloneBoard, sameHex, setCell } from "../game/board";
 
 function withBoard(state: MarrakechState): MarrakechState {
 	return {
 		...state,
-		board: state.board.map((row) => [...row]),
+		board: cloneBoard(state.board),
 		coins: { ...state.coins },
 		tiles: {
 			"0": { ...state.tiles["0"] },
@@ -47,8 +48,7 @@ function playOneTurn(client: ReturnType<typeof createTestClient>) {
 
 	client.moves.placeFirstTile(firstTarget, availableTerrain);
 	const secondTarget = getNeighbors(firstTarget).find(
-		(cell) =>
-			!(cell.row === assam.row && cell.col === assam.col),
+		(cell) => !sameHex(cell, assam),
 	)!;
 	client.moves.placeSecondTile(secondTarget);
 }
@@ -76,9 +76,9 @@ describe("calculateScores", () => {
 	it("所持金 + 盤面タイル数で降順ソートされる", () => {
 		const G = withBoard(createInitialState());
 		G.coins = { "0": 20, "1": 30, "2": 25 };
-		G.board[3][3] = { terrain: "sea", owner: "0" };
-		G.board[3][4] = { terrain: "sea", owner: "0" };
-		G.board[3][5] = { terrain: "city", owner: "2" };
+		setCell(G.board, { q: 0, r: 0 }, { terrain: "sea", owner: "0" });
+		setCell(G.board, { q: 1, r: 0 }, { terrain: "sea", owner: "0" });
+		setCell(G.board, { q: 2, r: 0 }, { terrain: "city", owner: "2" });
 
 		const scores = calculateScores(G);
 		expect(scores[0]).toEqual({ player: "1", coins: 30, tilesOnBoard: 0, total: 30 });

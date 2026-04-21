@@ -1,4 +1,5 @@
 import type { MarrakechState, PlayerId, Tile, HexCoord } from "./types";
+import { getCell, toBoardKey } from "./board";
 import { getNeighbors, isValidCell } from "./hex";
 
 export function connectedComponentSize(
@@ -14,11 +15,11 @@ export function connectedComponentSize(
 
   while (queue.length > 0) {
     const current = queue.shift()!;
-    const key = `${current.row},${current.col}`;
+    const key = toBoardKey(current);
     if (visited.has(key)) continue;
     visited.add(key);
 
-    const currentTile = board[current.row]?.[current.col] ?? null;
+    const currentTile = getCell(board, current);
     if (
       currentTile === null ||
       currentTile.owner !== tile.owner ||
@@ -29,7 +30,7 @@ export function connectedComponentSize(
 
     size += 1;
     for (const next of getNeighbors(current)) {
-      const nextKey = `${next.row},${next.col}`;
+      const nextKey = toBoardKey(next);
       if (!visited.has(nextKey)) {
         queue.push(next);
       }
@@ -50,7 +51,7 @@ export function applyLandingPayment(
   currentPlayer: PlayerId,
 ): PaymentResult {
   const landing = G.assam.position;
-  const landingTile = G.board[landing.row]?.[landing.col] ?? null;
+  const landingTile = getCell(G.board, landing);
   if (landingTile === null || landingTile.owner === currentPlayer) {
     return { paid: false, payee: null, amount: 0 };
   }

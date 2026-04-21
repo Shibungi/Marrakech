@@ -3,6 +3,7 @@ import { Client } from "boardgame.io/client";
 
 import { MarrakechGame } from "../game/MarrakechGame";
 import { getNeighbors } from "../game/hex";
+import { sameHex } from "../game/board";
 
 function getCurrentStage(state: any) {
   const s = state;
@@ -48,9 +49,7 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     const firstTarget = getNeighbors(client.getState()!.G.assam.position)[0];
     client.moves.placeFirstTile(firstTarget, "sea");
     const secondTarget = getNeighbors(firstTarget).find(
-      (cell) =>
-        !(cell.row === client.getState()!.G.assam.position.row &&
-          cell.col === client.getState()!.G.assam.position.col),
+      (cell) => !sameHex(cell, client.getState()!.G.assam.position),
     )!;
     client.moves.placeSecondTile(secondTarget);
 
@@ -75,7 +74,7 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     const client = Client({ game: MarrakechGame, numPlayers: 3 });
     client.start();
 
-    client.moves.chooseDirection({ row: 0, col: 0 });
+    client.moves.chooseDirection({ q: 3, r: -3 });
 
     expect(client.getState()?.G.turnPhase).toBe("chooseDirection");
     expect(client.getState()?.G.assam.direction).toBe("NE");

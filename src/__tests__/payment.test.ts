@@ -5,11 +5,12 @@ import { MarrakechGame } from "../game/MarrakechGame";
 import { applyLandingPayment, connectedComponentSize } from "../game/payment";
 import type { MarrakechState } from "../game/types";
 import { createInitialState } from "../game/setup";
+import { cloneBoard, setCell } from "../game/board";
 
 function withBoard(state: MarrakechState): MarrakechState {
   return {
     ...state,
-    board: state.board.map((row) => [...row]),
+    board: cloneBoard(state.board),
     coins: { ...state.coins },
   };
 }
@@ -17,15 +18,15 @@ function withBoard(state: MarrakechState): MarrakechState {
 describe("payment helpers", () => {
   it("同タイプ・同オーナー連結成分サイズを返す", () => {
     const G = withBoard(createInitialState());
-    G.board[3][4] = { terrain: "city", owner: "1" };
-    G.board[3][5] = { terrain: "city", owner: "1" };
-    G.board[2][4] = { terrain: "city", owner: "1" };
-    G.board[2][3] = { terrain: "sea", owner: "1" }; // type mismatch
-    G.board[4][3] = { terrain: "city", owner: "2" }; // owner mismatch
+    setCell(G.board, { q: 1, r: 0 }, { terrain: "city", owner: "1" });
+    setCell(G.board, { q: 2, r: 0 }, { terrain: "city", owner: "1" });
+    setCell(G.board, { q: 1, r: -1 }, { terrain: "city", owner: "1" });
+    setCell(G.board, { q: 0, r: -1 }, { terrain: "sea", owner: "1" });
+    setCell(G.board, { q: 0, r: 1 }, { terrain: "city", owner: "2" });
 
     const size = connectedComponentSize(
       G.board,
-      { row: 3, col: 4 },
+      { q: 1, r: 0 },
       { terrain: "city", owner: "1" },
     );
     expect(size).toBe(3);
@@ -33,10 +34,10 @@ describe("payment helpers", () => {
 
   it("資金不足時は部分支払いになる", () => {
     const G = withBoard(createInitialState());
-    G.assam.position = { row: 3, col: 4 };
-    G.board[3][4] = { terrain: "city", owner: "1" };
-    G.board[3][5] = { terrain: "city", owner: "1" };
-    G.board[2][4] = { terrain: "city", owner: "1" };
+    G.assam.position = { q: 1, r: 0 };
+    setCell(G.board, { q: 1, r: 0 }, { terrain: "city", owner: "1" });
+    setCell(G.board, { q: 2, r: 0 }, { terrain: "city", owner: "1" });
+    setCell(G.board, { q: 1, r: -1 }, { terrain: "city", owner: "1" });
     G.coins["0"] = 2;
 
     const result = applyLandingPayment(G, "0");
@@ -56,10 +57,9 @@ describe("MarrakechGame payment integration", () => {
       ...MarrakechGame,
       setup: () => {
         const G = withBoard(createInitialState());
-        // 1〜3 歩 East すべてにタイルを配置（ランダム歩数に依存しない）
-        G.board[3][4] = { terrain: "city", owner: "1" };
-        G.board[3][5] = { terrain: "city", owner: "1" };
-        G.board[3][6] = { terrain: "city", owner: "1" };
+        setCell(G.board, { q: 1, r: 0 }, { terrain: "city", owner: "1" });
+        setCell(G.board, { q: 2, r: 0 }, { terrain: "city", owner: "1" });
+        setCell(G.board, { q: 3, r: 0 }, { terrain: "city", owner: "1" });
         return G;
       },
     };
@@ -67,14 +67,13 @@ describe("MarrakechGame payment integration", () => {
     const client = Client({ game: gameWithLandingTile, numPlayers: 3 });
     client.start();
 
-    client.moves.chooseDirection({ row: 3, col: 4 }); // E
+    client.moves.chooseDirection({ q: 1, r: 0 });
     client.moves.moveAssam();
 
     const next = client.getState()!;
     const landing = next.G.assam.position;
-    expect(landing.row).toBe(3);
-    expect([4, 5, 6]).toContain(landing.col);
-    // 連結成分サイズ = 3 なので支払い = 3
+    expect(landing.r).toBe(0);
+    expect([1, 2, 3]).toContain(landing.q);
     expect(next.G.coins["0"]).toBe(27);
     expect(next.G.coins["1"]).toBe(33);
     expect(next.G.log[0].detail).toContain("支払い");

@@ -3,6 +3,7 @@ import { Client } from "boardgame.io/client";
 
 import { MarrakechGame } from "../game/MarrakechGame";
 import { getNeighbors } from "../game/hex";
+import { getCell, sameHex } from "../game/board";
 
 describe("MarrakechGame placement integration", () => {
   afterEach(() => {
@@ -23,16 +24,16 @@ describe("MarrakechGame placement integration", () => {
     client.moves.placeFirstTile(firstTarget, "mountain");
 
     const secondTarget = getNeighbors(firstTarget).find(
-      (cell) => !(cell.row === assam.row && cell.col === assam.col),
+      (cell) => !sameHex(cell, assam),
     )!;
     client.moves.placeSecondTile(secondTarget);
 
     const state = client.getState()!;
-    expect(state.G.board[firstTarget.row][firstTarget.col]).toEqual({
+    expect(getCell(state.G.board, firstTarget)).toEqual({
       terrain: "mountain",
       owner: "0",
     });
-    expect(state.G.board[secondTarget.row][secondTarget.col]).toEqual({
+    expect(getCell(state.G.board, secondTarget)).toEqual({
       terrain: "mountain",
       owner: "0",
     });
@@ -50,7 +51,7 @@ describe("MarrakechGame placement integration", () => {
     client.moves.chooseDirection(getNeighbors(origin)[0]);
     client.moves.moveAssam();
 
-    client.moves.placeFirstTile({ row: 0, col: 0 }, "sea");
+  client.moves.placeFirstTile({ q: 0, r: -3 }, "sea");
 
     const state = client.getState()!;
     expect(state.G.turnPhase).toBe("placeFirstTile");
