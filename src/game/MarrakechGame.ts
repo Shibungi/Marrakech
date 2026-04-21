@@ -19,7 +19,7 @@ function formatPlayer(playerID: string | null | undefined): string {
 /** プレイヤーが配置可能なタイル（同タイプ 2 枚以上）を持っているか */
 export function canPlaceTiles(G: MarrakechState, player: PlayerId): boolean {
   const t = G.tiles[player];
-  return t.sea >= 2 || t.mountain >= 2 || t.city >= 2;
+  return t.sea >= 2 || t.forest >= 2 || t.city >= 2;
 }
 
 /** 全プレイヤーのスコアを計算（降順ソート） */

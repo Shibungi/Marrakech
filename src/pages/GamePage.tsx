@@ -207,7 +207,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                 <stop offset="52%" stopColor="#1d75c2" />
                 <stop offset="100%" stopColor="#083f86" />
               </linearGradient>
-              <linearGradient id="hex-mountain-fill" x1="0" y1="0" x2="1" y2="1">
+              <linearGradient id="hex-forest-fill" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#89d94a" />
                 <stop offset="60%" stopColor="#4c9925" />
                 <stop offset="100%" stopColor="#2e6c18" />
@@ -294,7 +294,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
               onChange={(event) => setSelectedTerrain(event.target.value as TerrainType)}
             >
               <option value="sea">sea</option>
-              <option value="mountain">mountain</option>
+              <option value="forest">forest</option>
               <option value="city">city</option>
             </select>
           )}

@@ -21,7 +21,7 @@ describe("MarrakechGame placement integration", () => {
 
     const assam = client.getState()!.G.assam.position;
     const firstTarget = getNeighbors(assam)[0];
-    client.moves.placeFirstTile(firstTarget, "mountain");
+    client.moves.placeFirstTile(firstTarget, "forest");
 
     const secondTarget = getNeighbors(firstTarget).find(
       (cell) => !sameHex(cell, assam),
@@ -30,14 +30,14 @@ describe("MarrakechGame placement integration", () => {
 
     const state = client.getState()!;
     expect(getCell(state.G.board, firstTarget)).toEqual({
-      terrain: "mountain",
+      terrain: "forest",
       owner: "0",
     });
     expect(getCell(state.G.board, secondTarget)).toEqual({
-      terrain: "mountain",
+      terrain: "forest",
       owner: "0",
     });
-    expect(state.G.tiles["0"].mountain).toBe(2);
+    expect(state.G.tiles["0"].forest).toBe(2);
     expect(state.ctx.currentPlayer).toBe("1");
     expect(state.G.turnPhase).toBe("chooseDirection");
   });

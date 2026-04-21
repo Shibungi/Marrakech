@@ -41,7 +41,7 @@ function playOneTurn(client: ReturnType<typeof createTestClient>) {
 	const assam = afterMove.G.assam.position;
 	const firstTarget = getNeighbors(assam)[0];
 	const currentPlayer = afterMove.ctx.currentPlayer as PlayerId;
-	const availableTerrain = (["sea", "mountain", "city"] as const).find(
+	const availableTerrain = (["sea", "forest", "city"] as const).find(
 		(t) => afterMove.G.tiles[currentPlayer][t] >= 2,
 	);
 	if (!availableTerrain) return;
@@ -61,13 +61,13 @@ describe("canPlaceTiles", () => {
 
 	it("全タイプが 1 枚以下なら false", () => {
 		const G = withBoard(createInitialState());
-		G.tiles["0"] = { sea: 1, mountain: 0, city: 1 };
+		G.tiles["0"] = { sea: 1, forest: 0, city: 1 };
 		expect(canPlaceTiles(G, "0")).toBe(false);
 	});
 
 	it("1 タイプでも 2 枚以上あれば true", () => {
 		const G = withBoard(createInitialState());
-		G.tiles["0"] = { sea: 0, mountain: 2, city: 0 };
+		G.tiles["0"] = { sea: 0, forest: 2, city: 0 };
 		expect(canPlaceTiles(G, "0")).toBe(true);
 	});
 });
@@ -104,7 +104,7 @@ describe("endIf – ゲーム終了判定", () => {
 				const G = withBoard(createInitialState());
 				// 全プレイヤーのタイルを枯渇させる
 				for (const id of ["0", "1", "2"] as PlayerId[]) {
-					G.tiles[id] = { sea: 0, mountain: 0, city: 0 };
+					G.tiles[id] = { sea: 0, forest: 0, city: 0 };
 				}
 				return G;
 			},
@@ -124,7 +124,7 @@ describe("endIf – ゲーム終了判定", () => {
 			...MarrakechGame,
 			setup: () => {
 				const G = withBoard(createInitialState());
-				G.tiles["0"] = { sea: 0, mountain: 0, city: 0 };
+				G.tiles["0"] = { sea: 0, forest: 0, city: 0 };
 				return G;
 			},
 		};

@@ -382,8 +382,8 @@ select {
   stroke: #0f5f92;
 }
 
-.hex-cell-group.terrain-mountain .hex-cell-surface {
-  fill: url(#hex-mountain-fill);
+.hex-cell-group.terrain-forest .hex-cell-surface {
+  fill: url(#hex-forest-fill);
   stroke: #3f7e1f;
 }
 

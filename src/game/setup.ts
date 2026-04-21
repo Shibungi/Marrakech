@@ -32,7 +32,7 @@ function createInitialCoins(): Record<PlayerId, number> {
 function createInitialTiles(): Record<PlayerId, Record<TerrainType, number>> {
   const makeTiles = (): Record<TerrainType, number> => ({
     sea: INITIAL_TILE_COUNT,
-    mountain: INITIAL_TILE_COUNT,
+    forest: INITIAL_TILE_COUNT,
     city: INITIAL_TILE_COUNT,
   });
   return {

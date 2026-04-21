@@ -65,7 +65,7 @@
 
 ### 2.3 地形
 
-* 地形タイプ: `sea | mountain | city`
+* 地形タイプ: `sea | forest | city`
 * 各マスは以下のいずれか
 
   * 空

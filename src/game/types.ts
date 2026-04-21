@@ -40,7 +40,7 @@ export interface HexCoord {
 // ---------------------------------------------------------------------------
 
 /** 地形タイプ */
-export type TerrainType = "sea" | "mountain" | "city";
+export type TerrainType = "sea" | "forest" | "city";
 
 /** マス上のタイル情報（地形あり） */
 export interface Tile {

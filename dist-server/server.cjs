@@ -8,8 +8,7 @@ var PLAYER_LABELS = {
   "2": "C"
 };
 var INITIAL_COINS = 30;
-var ROW_SIZES = [4, 5, 6, 7, 6, 5, 4];
-var NUM_ROWS = ROW_SIZES.length;
+var BOARD_RADIUS = 3;
 var ALL_DIRECTIONS = [
   "NE",
   "E",
@@ -19,10 +18,71 @@ var ALL_DIRECTIONS = [
   "NW"
 ];
 
+// src/game/board.ts
+function toBoardKey(coord) {
+  return `${coord.q},${coord.r}`;
+}
+function sameHex(left, right) {
+  return left.q === right.q && left.r === right.r;
+}
+function getCell(board, coord) {
+  return board[toBoardKey(coord)] ?? null;
+}
+function setCell(board, coord, cell) {
+  board[toBoardKey(coord)] = cell;
+}
+
+// src/game/hex.ts
+var AXIAL_DELTAS = {
+  NE: { q: 1, r: -1 },
+  E: { q: 1, r: 0 },
+  SE: { q: 0, r: 1 },
+  SW: { q: -1, r: 1 },
+  W: { q: -1, r: 0 },
+  NW: { q: 0, r: -1 }
+};
+var DIRECTION_ORDER = ["NE", "E", "SE", "SW", "W", "NW"];
+function isValidCell(coord) {
+  const s = -coord.q - coord.r;
+  return Math.max(Math.abs(coord.q), Math.abs(coord.r), Math.abs(s)) <= BOARD_RADIUS;
+}
+function getAllCells() {
+  const cells = [];
+  for (let r = -BOARD_RADIUS; r <= BOARD_RADIUS; r++) {
+    const minQ = Math.max(-BOARD_RADIUS, -r - BOARD_RADIUS);
+    const maxQ = Math.min(BOARD_RADIUS, -r + BOARD_RADIUS);
+    for (let q = minQ; q <= maxQ; q++) {
+      cells.push({ q, r });
+    }
+  }
+  return cells;
+}
+function getNeighbors(coord) {
+  return DIRECTION_ORDER.map((dir) => stepInDirection(coord, dir)).filter((next) => next !== null);
+}
+function stepInDirection(coord, dir) {
+  const delta = AXIAL_DELTAS[dir];
+  const next = { q: coord.q + delta.q, r: coord.r + delta.r };
+  return isValidCell(next) ? next : null;
+}
+function directionFromNeighbor(origin, target) {
+  if (!isValidCell(origin) || !isValidCell(target)) return null;
+  for (const dir of DIRECTION_ORDER) {
+    const next = stepInDirection(origin, dir);
+    if (next && sameHex(next, target)) {
+      return dir;
+    }
+  }
+  return null;
+}
+function formatHexCoord(coord) {
+  return `(${coord.q},${coord.r})`;
+}
+
 // src/game/setup.ts
 var INITIAL_TILE_COUNT = 4;
 function createEmptyBoard() {
-  return ROW_SIZES.map((size) => Array.from({ length: size }, () => null));
+  return Object.fromEntries(getAllCells().map((cell) => [toBoardKey(cell), null]));
 }
 function createInitialCoins() {
   return {
@@ -34,7 +94,7 @@ function createInitialCoins() {
 function createInitialTiles() {
   const makeTiles = () => ({
     sea: INITIAL_TILE_COUNT,
-    mountain: INITIAL_TILE_COUNT,
+    forest: INITIAL_TILE_COUNT,
     city: INITIAL_TILE_COUNT
   });
   return {
@@ -48,7 +108,7 @@ function createInitialState() {
     turnPhase: "chooseDirection",
     board: createEmptyBoard(),
     assam: {
-      position: { row: 3, col: 3 },
+      position: { q: 0, r: 0 },
       direction: "NE"
     },
     coins: createInitialCoins(),
@@ -57,65 +117,6 @@ function createInitialState() {
     firstPlacement: null,
     log: []
   };
-}
-
-// src/game/hex.ts
-function isValidCell(coord) {
-  const { row, col } = coord;
-  if (row < 0 || row >= NUM_ROWS) return false;
-  if (col < 0 || col >= ROW_SIZES[row]) return false;
-  return true;
-}
-function rowOffset(row) {
-  return Math.abs(row - 3);
-}
-function toDoubled(hex) {
-  return { x: 2 * hex.col + rowOffset(hex.row), y: hex.row };
-}
-function fromDoubled(dc) {
-  const row = dc.y;
-  if (row < 0 || row >= NUM_ROWS) return null;
-  const offset = rowOffset(row);
-  const colRaw = dc.x - offset;
-  if (colRaw % 2 !== 0) return null;
-  const col = colRaw / 2;
-  const hex = { row, col };
-  return isValidCell(hex) ? hex : null;
-}
-var DOUBLED_DELTAS = {
-  NE: { dx: 1, dy: -1 },
-  E: { dx: 2, dy: 0 },
-  SE: { dx: 1, dy: 1 },
-  SW: { dx: -1, dy: 1 },
-  W: { dx: -2, dy: 0 },
-  NW: { dx: -1, dy: -1 }
-};
-var DIRECTION_ORDER = ["NE", "E", "SE", "SW", "W", "NW"];
-function getNeighbors(coord) {
-  const dc = toDoubled(coord);
-  const neighbors = [];
-  for (const { dx, dy } of Object.values(DOUBLED_DELTAS)) {
-    const next = fromDoubled({ x: dc.x + dx, y: dc.y + dy });
-    if (next) {
-      neighbors.push(next);
-    }
-  }
-  return neighbors;
-}
-function stepInDirection(coord, dir) {
-  const dc = toDoubled(coord);
-  const delta = DOUBLED_DELTAS[dir];
-  return fromDoubled({ x: dc.x + delta.dx, y: dc.y + delta.dy });
-}
-function directionFromNeighbor(origin, target) {
-  if (!isValidCell(origin) || !isValidCell(target)) return null;
-  for (const dir of DIRECTION_ORDER) {
-    const next = stepInDirection(origin, dir);
-    if (next && next.row === target.row && next.col === target.col) {
-      return dir;
-    }
-  }
-  return null;
 }
 
 // src/game/movement.ts
@@ -152,16 +153,16 @@ function connectedComponentSize(board, start, tile) {
   let size = 0;
   while (queue.length > 0) {
     const current = queue.shift();
-    const key = `${current.row},${current.col}`;
+    const key = toBoardKey(current);
     if (visited.has(key)) continue;
     visited.add(key);
-    const currentTile = board[current.row]?.[current.col] ?? null;
+    const currentTile = getCell(board, current);
     if (currentTile === null || currentTile.owner !== tile.owner || currentTile.terrain !== tile.terrain) {
       continue;
     }
     size += 1;
     for (const next of getNeighbors(current)) {
-      const nextKey = `${next.row},${next.col}`;
+      const nextKey = toBoardKey(next);
       if (!visited.has(nextKey)) {
         queue.push(next);
       }
@@ -171,7 +172,7 @@ function connectedComponentSize(board, start, tile) {
 }
 function applyLandingPayment(G, currentPlayer) {
   const landing = G.assam.position;
-  const landingTile = G.board[landing.row]?.[landing.col] ?? null;
+  const landingTile = getCell(G.board, landing);
   if (landingTile === null || landingTile.owner === currentPlayer) {
     return { paid: false, payee: null, amount: 0 };
   }
@@ -194,14 +195,15 @@ function formatPlayer(playerID) {
 }
 function canPlaceTiles(G, player) {
   const t = G.tiles[player];
-  return t.sea >= 2 || t.mountain >= 2 || t.city >= 2;
+  return t.sea >= 2 || t.forest >= 2 || t.city >= 2;
 }
 function calculateScores(G) {
   const scores = ["0", "1", "2"].map((id) => {
     let tilesOnBoard = 0;
-    for (const row of G.board) {
-      for (const cell of row) {
-        if (cell && cell.owner === id) tilesOnBoard++;
+    for (const cell of getAllCells()) {
+      const tile = getCell(G.board, cell);
+      if (tile && tile.owner === id) {
+        tilesOnBoard += 1;
       }
     }
     return {
@@ -282,13 +284,13 @@ function moveAssam({
   G.assam.direction = result.direction;
   const payment = applyLandingPayment(G, ctx.currentPlayer);
   const player = formatPlayer(ctx.currentPlayer);
-  const redirectDetail = result.redirects.length === 0 ? "" : ` / \u76E4\u5916\u56DE\u907F: ${result.redirects.map((redirect) => `(${redirect.at.row},${redirect.at.col}) ${redirect.from}\u2192${redirect.to}`).join(", ")}`;
+  const redirectDetail = result.redirects.length === 0 ? "" : ` / \u76E4\u5916\u56DE\u907F: ${result.redirects.map((redirect) => `${formatHexCoord(redirect.at)} ${redirect.from}\u2192${redirect.to}`).join(", ")}`;
   const paymentDetail = payment.paid && payment.payee !== null ? ` / \u652F\u6255\u3044: ${player} \u2192 ${formatPlayer(payment.payee)} \u306B ${payment.amount}` : "";
   G.log.unshift({
     turn: ctx.turn,
     player: ctx.currentPlayer,
     action: "moveAssam",
-    detail: `${player} \u304C ${steps} \u30DE\u30B9\u79FB\u52D5\u3057 (${result.position.row},${result.position.col}) \u306B\u5230\u9054\u3002\u5411\u304D: ${result.direction}${redirectDetail}${paymentDetail}`
+    detail: `${player} \u304C ${steps} \u30DE\u30B9\u79FB\u52D5\u3057 ${formatHexCoord(result.position)} \u306B\u5230\u9054\u3002\u5411\u304D: ${result.direction}${redirectDetail}${paymentDetail}`
   });
   const currentPlayer = ctx.currentPlayer;
   if (!canPlaceTiles(G, currentPlayer)) {
@@ -312,12 +314,12 @@ function placeFirstTile({
   if (G.turnPhase !== "placeFirstTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer;
   const isAdjacentToAssam = getNeighbors(G.assam.position).some(
-    (neighbor) => neighbor.row === target.row && neighbor.col === target.col
+    (neighbor) => sameHex(neighbor, target)
   );
   if (!isAdjacentToAssam) return INVALID_MOVE;
   if (G.tiles[currentPlayer][terrain] < 2) return INVALID_MOVE;
   const player = formatPlayer(ctx.currentPlayer);
-  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  setCell(G.board, target, { terrain, owner: currentPlayer });
   G.tiles[currentPlayer][terrain] -= 1;
   G.selectedTerrain = terrain;
   G.firstPlacement = { ...target };
@@ -325,7 +327,7 @@ function placeFirstTile({
     turn: ctx.turn,
     player: currentPlayer,
     action: "placeFirstTile",
-    detail: `${player} \u304C ${terrain} \u3092 (${target.row},${target.col}) \u306B\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002`
+    detail: `${player} \u304C ${terrain} \u3092 ${formatHexCoord(target)} \u306B\u914D\u7F6E\u3057\u307E\u3057\u305F\u3002`
   });
   G.turnPhase = "placeSecondTile";
   events.endStage();
@@ -338,17 +340,17 @@ function placeSecondTile({
   if (G.turnPhase !== "placeSecondTile") return INVALID_MOVE;
   const currentPlayer = ctx.currentPlayer;
   if (G.selectedTerrain === null || G.firstPlacement === null) return INVALID_MOVE;
-  if (target.row === G.assam.position.row && target.col === G.assam.position.col) {
+  if (sameHex(target, G.assam.position)) {
     return INVALID_MOVE;
   }
   const isAdjacentToFirst = getNeighbors(G.firstPlacement).some(
-    (neighbor) => neighbor.row === target.row && neighbor.col === target.col
+    (neighbor) => sameHex(neighbor, target)
   );
   if (!isAdjacentToFirst) return INVALID_MOVE;
   if (G.tiles[currentPlayer][G.selectedTerrain] < 1) return INVALID_MOVE;
   const player = formatPlayer(ctx.currentPlayer);
   const terrain = G.selectedTerrain;
-  G.board[target.row][target.col] = { terrain, owner: currentPlayer };
+  setCell(G.board, target, { terrain, owner: currentPlayer });
   G.tiles[currentPlayer][terrain] -= 1;
   G.selectedTerrain = null;
   G.firstPlacement = null;
@@ -356,7 +358,7 @@ function placeSecondTile({
     turn: ctx.turn,
     player: currentPlayer,
     action: "placeSecondTile",
-    detail: `${player} \u304C ${terrain} \u3092 (${target.row},${target.col}) \u306B\u914D\u7F6E\u3057\u3066\u624B\u756A\u3092\u7D42\u4E86\u3057\u307E\u3057\u305F\u3002`
+    detail: `${player} \u304C ${terrain} \u3092 ${formatHexCoord(target)} \u306B\u914D\u7F6E\u3057\u3066\u624B\u756A\u3092\u7D42\u4E86\u3057\u307E\u3057\u305F\u3002`
   });
   events.endTurn();
 }

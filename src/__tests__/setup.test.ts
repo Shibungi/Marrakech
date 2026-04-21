@@ -41,7 +41,7 @@ describe("createInitialState", () => {
     const players: PlayerId[] = ["0", "1", "2"];
     for (const p of players) {
       expect(state.tiles[p].sea).toBeGreaterThan(0);
-      expect(state.tiles[p].mountain).toBeGreaterThan(0);
+      expect(state.tiles[p].forest).toBeGreaterThan(0);
       expect(state.tiles[p].city).toBeGreaterThan(0);
     }
   });
