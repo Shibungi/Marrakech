@@ -335,9 +335,6 @@ select {
 
 .hex-cell-group {
   cursor: default;
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 140ms ease;
 }
 
 .hex-owner-badge,
@@ -348,6 +345,7 @@ select {
 .hex-cell-shadow {
   fill: rgba(30, 15, 10, 0.3);
   transform: translateY(5px);
+  transition: transform 140ms ease, fill 140ms ease;
 }
 
 .hex-cell-base {
@@ -366,6 +364,7 @@ select {
 
 .hex-cell-surface {
   stroke-width: 2.2;
+  transition: stroke 140ms ease, filter 140ms ease;
 }
 
 .hex-cell-sheen {
@@ -410,8 +409,12 @@ select {
   stroke: rgba(255, 193, 122, 0.92);
 }
 
-.hex-cell-group.clickable:hover {
-  transform: translateY(-2px);
+.hex-cell-group.clickable:hover .hex-cell-shadow {
+  transform: translateY(3px);
+}
+
+.hex-cell-group.clickable:hover .hex-cell-surface {
+  filter: brightness(1.06) saturate(1.05);
 }
 
 .hex-owner-badge {
