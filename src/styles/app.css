@@ -319,12 +319,12 @@ select {
 /* ---- Hex Board ---- */
 
 .hex-board {
-  --hex-shape: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  --hex-shape: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   --hex-width: 72px;
-  --hex-height: 62px;
-  --hex-gap: 8px;
-  --hex-row-overlap: 14px;
-  --hex-offset-step: calc((var(--hex-width) + var(--hex-gap)) / 2);
+  --hex-height: calc(var(--hex-width) * 1.1547);
+  --hex-gap: 0px;
+  --hex-row-overlap: calc(var(--hex-height) * 0.25);
+  --hex-offset-step: calc(var(--hex-width) / 2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -442,16 +442,12 @@ select {
 
 .hex-cell.terrain-sea .hex-surface::after {
   background:
-    repeating-linear-gradient(
-      -12deg,
+    repeating-linear-gradient(-12deg,
       rgba(255, 255, 255, 0.26) 0 2px,
-      rgba(255, 255, 255, 0.04) 2px 9px
-    ),
-    repeating-linear-gradient(
-      12deg,
+      rgba(255, 255, 255, 0.04) 2px 9px),
+    repeating-linear-gradient(12deg,
       rgba(35, 118, 196, 0.18) 0 5px,
-      rgba(35, 118, 196, 0) 5px 12px
-    );
+      rgba(35, 118, 196, 0) 5px 12px);
   opacity: 0.75;
 }
 
@@ -600,9 +596,6 @@ select {
 
   .hex-board {
     --hex-width: 60px;
-    --hex-height: 52px;
-    --hex-gap: 6px;
-    --hex-row-overlap: 12px;
   }
 }
 
@@ -610,9 +603,6 @@ select {
 
   .hex-board {
     --hex-width: 50px;
-    --hex-height: 44px;
-    --hex-gap: 4px;
-    --hex-row-overlap: 9px;
   }
 
   .hex-owner-badge {
