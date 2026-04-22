@@ -4,27 +4,29 @@ import { getNeighbors, isValidCell } from "./hex";
 
 const PLAYER_IDS: readonly PlayerId[] = ["0", "1", "2"];
 
-type ConnectedComponentStats = {
+export type ConnectedComponentSummary = {
   size: number;
   ownerCounts: Record<PlayerId, number>;
+  cells: HexCoord[];
 };
 
 function createOwnerCounts(): Record<PlayerId, number> {
   return { "0": 0, "1": 0, "2": 0 };
 }
 
-function collectConnectedComponentStats(
+function collectConnectedComponentSummary(
   board: MarrakechState["board"],
   start: HexCoord,
   terrain: Tile["terrain"],
-): ConnectedComponentStats {
+): ConnectedComponentSummary {
   const ownerCounts = createOwnerCounts();
   if (!isValidCell(start)) {
-    return { size: 0, ownerCounts };
+    return { size: 0, ownerCounts, cells: [] };
   }
 
   const visited = new Set<string>();
   const queue: HexCoord[] = [start];
+  const cells: HexCoord[] = [];
   let size = 0;
 
   while (queue.length > 0) {
@@ -40,6 +42,7 @@ function collectConnectedComponentStats(
 
     size += 1;
     ownerCounts[currentTile.owner] += 1;
+    cells.push(current);
 
     for (const next of getNeighbors(current)) {
       const nextKey = toBoardKey(next);
@@ -49,7 +52,15 @@ function collectConnectedComponentStats(
     }
   }
 
-  return { size, ownerCounts };
+  return { size, ownerCounts, cells };
+}
+
+export function connectedComponentSummary(
+  board: MarrakechState["board"],
+  start: HexCoord,
+  tile: Tile,
+): ConnectedComponentSummary {
+  return collectConnectedComponentSummary(board, start, tile.terrain);
 }
 
 export function connectedComponentSize(
@@ -57,7 +68,7 @@ export function connectedComponentSize(
   start: HexCoord,
   tile: Tile,
 ): number {
-  return collectConnectedComponentStats(board, start, tile.terrain).size;
+  return connectedComponentSummary(board, start, tile).size;
 }
 
 export function connectedComponentOwnerCounts(
@@ -65,7 +76,7 @@ export function connectedComponentOwnerCounts(
   start: HexCoord,
   tile: Tile,
 ): Record<PlayerId, number> {
-  return collectConnectedComponentStats(board, start, tile.terrain).ownerCounts;
+  return connectedComponentSummary(board, start, tile).ownerCounts;
 }
 
 type PaymentTransfer = {

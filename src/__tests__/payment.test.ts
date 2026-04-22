@@ -6,10 +6,11 @@ import {
   applyLandingPayment,
   connectedComponentOwnerCounts,
   connectedComponentSize,
+  connectedComponentSummary,
 } from "../game/payment";
 import type { MarrakechState } from "../game/types";
 import { createInitialState } from "../game/setup";
-import { cloneBoard, setCell } from "../game/board";
+import { cloneBoard, setCell, toBoardKey } from "../game/board";
 
 function withBoard(state: MarrakechState): MarrakechState {
   return {
@@ -51,6 +52,28 @@ describe("payment helpers", () => {
     );
 
     expect(counts).toEqual({ "0": 1, "1": 3, "2": 1 });
+  });
+
+  it("同タイプ連結成分の構成セル一覧を返す", () => {
+    const G = withBoard(createInitialState());
+    setCell(G.board, { q: 1, r: 0 }, { terrain: "forest", owner: "1" });
+    setCell(G.board, { q: 2, r: 0 }, { terrain: "forest", owner: "1" });
+    setCell(G.board, { q: 1, r: -1 }, { terrain: "forest", owner: "2" });
+    setCell(G.board, { q: 0, r: 0 }, { terrain: "forest", owner: "0" });
+    setCell(G.board, { q: -2, r: 0 }, { terrain: "forest", owner: "2" });
+    setCell(G.board, { q: 0, r: -1 }, { terrain: "city", owner: "1" });
+
+    const summary = connectedComponentSummary(
+      G.board,
+      { q: 1, r: 0 },
+      { terrain: "forest", owner: "1" },
+    );
+
+    expect(summary.size).toBe(4);
+    expect(summary.ownerCounts).toEqual({ "0": 1, "1": 2, "2": 1 });
+    expect(summary.cells.map((cell) => toBoardKey(cell)).sort()).toEqual(
+      ["1,0", "2,0", "1,-1", "0,0"].sort(),
+    );
   });
 
   it("自分より多い枚数の各プレイヤーに枚数差だけ支払う", () => {

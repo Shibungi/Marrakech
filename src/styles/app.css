@@ -352,6 +352,7 @@ select {
   fill: #382117;
   stroke: rgba(22, 11, 7, 0.5);
   stroke-width: 2;
+  transition: stroke 140ms ease, stroke-width 140ms ease;
 }
 
 .hex-cell-surface,
@@ -422,6 +423,38 @@ select {
   filter: brightness(1.06) saturate(1.05);
 }
 
+.hex-cell-group.hover-component .hex-cell-shadow {
+  transform: translateY(3px);
+  fill: rgba(30, 15, 10, 0.34);
+}
+
+.hex-cell-group.hover-component .hex-cell-base {
+  stroke: rgba(255, 230, 172, 0.76);
+  stroke-width: 2.5;
+}
+
+.hex-cell-group.hover-component .hex-cell-surface {
+  filter: brightness(1.1) saturate(1.08);
+  stroke: rgba(255, 241, 203, 0.92);
+  stroke-width: 3;
+}
+
+.hex-cell-group.hover-origin .hex-cell-shadow {
+  transform: translateY(1px);
+  fill: rgba(30, 15, 10, 0.4);
+}
+
+.hex-cell-group.hover-origin .hex-cell-base {
+  stroke: rgba(255, 240, 204, 0.96);
+  stroke-width: 2.8;
+}
+
+.hex-cell-group.hover-origin .hex-cell-surface {
+  filter: brightness(1.17) saturate(1.14) drop-shadow(0 0 12px rgba(255, 218, 128, 0.48));
+  stroke: rgba(255, 241, 199, 1);
+  stroke-width: 3.8;
+}
+
 .hex-owner-badge {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
@@ -451,6 +484,61 @@ select {
 
 .hex-owner-badge.owner-2 .hex-owner-label {
   fill: #2d1d12;
+}
+
+.hex-hover-tooltip {
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.34));
+}
+
+.hex-hover-tooltip-panel {
+  fill: rgba(36, 23, 16, 0.94);
+  stroke: rgba(255, 226, 178, 0.72);
+  stroke-width: 1.5;
+}
+
+.hex-hover-tooltip-title {
+  fill: #fff7ec;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hex-hover-tooltip-subtitle {
+  fill: #f3d09b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.hex-hover-tooltip-owner {
+  opacity: 1;
+}
+
+.hex-hover-tooltip-owner.empty {
+  opacity: 0.42;
+}
+
+.hex-hover-tooltip-owner-dot {
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-width: 1;
+}
+
+.hex-hover-tooltip-owner.owner-0 .hex-hover-tooltip-owner-dot {
+  fill: #d4342b;
+}
+
+.hex-hover-tooltip-owner.owner-1 .hex-hover-tooltip-owner-dot {
+  fill: #188eb8;
+}
+
+.hex-hover-tooltip-owner.owner-2 .hex-hover-tooltip-owner-dot {
+  fill: #e0af16;
+}
+
+.hex-hover-tooltip-owner-label {
+  fill: #fff8f0;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .hex-assam-token {
