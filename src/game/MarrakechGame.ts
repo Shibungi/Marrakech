@@ -3,7 +3,7 @@ import type { Ctx, Game } from "boardgame.io";
 import type { MarrakechState, PlayerId, PlayerScore } from "./types";
 import { PLAYER_LABELS } from "./types";
 import { createInitialState } from "./setup";
-import { directionFromNeighbor, formatHexCoord, getAllCells, getNeighbors } from "./hex";
+import { directionFromNeighbor, formatHexCoord, getAllCells, getForwardDirections, getNeighbors } from "./hex";
 import { moveAssamWithBounce } from "./movement";
 import { applyLandingPayment } from "./payment";
 import type { TerrainType } from "./types";
@@ -87,6 +87,9 @@ function chooseDirection({
   if (G.turnPhase !== "chooseDirection") return INVALID_MOVE;
   const newDirection = directionFromNeighbor(G.assam.position, target);
   if (!newDirection) return INVALID_MOVE;
+  if (!getForwardDirections(G.assam.direction).includes(newDirection)) {
+    return INVALID_MOVE;
+  }
   G.assam.direction = newDirection;
 
   const player = formatPlayer(ctx.currentPlayer);
@@ -113,6 +116,8 @@ function moveAssam({
 }): void | "INVALID_MOVE" {
   if (G.turnPhase !== "moveAssam") return INVALID_MOVE;
 
+  const currentPlayer = ctx.currentPlayer as PlayerId;
+  const player = formatPlayer(ctx.currentPlayer);
   const randomUnit = () => random.Number();
 
   const steps = Math.floor(randomUnit() * 3) + 1;
@@ -125,9 +130,9 @@ function moveAssam({
 
   G.assam.position = result.position;
   G.assam.direction = result.direction;
-  const payment = applyLandingPayment(G, ctx.currentPlayer as PlayerId);
+  const coinsBeforePayment = { ...G.coins };
+  const payment = applyLandingPayment(G, currentPlayer);
 
-  const player = formatPlayer(ctx.currentPlayer);
   const redirectDetail =
     result.redirects.length === 0
       ? ""
@@ -136,18 +141,29 @@ function moveAssam({
         .join(", ")}`;
   const paymentDetail =
     payment.paid
-      ? ` / 支払い: ${player} → ${payment.transfers
-        .map((transfer) => `${formatPlayer(transfer.payee)} に ${transfer.amount}`)
-        .join(", ")}`
+      ? (() => {
+        const runningCoins = { ...coinsBeforePayment };
+
+        return ` / 支払い: ${payment.transfers
+          .map((transfer) => {
+            const payerBefore = runningCoins[currentPlayer];
+            const payeeBefore = runningCoins[transfer.payee];
+
+            runningCoins[currentPlayer] -= transfer.amount;
+            runningCoins[transfer.payee] += transfer.amount;
+
+            return `${player} ${payerBefore}→${runningCoins[currentPlayer]}, ${formatPlayer(transfer.payee)} ${payeeBefore}→${runningCoins[transfer.payee]} (${transfer.amount})`;
+          })
+          .join(" / ")}`;
+      })()
       : "";
 
   G.log.unshift({
     turn: ctx.turn,
-    player: ctx.currentPlayer as PlayerId,
+    player: currentPlayer,
     action: "moveAssam",
     detail: `${player} が ${steps} マス移動し ${formatHexCoord(result.position)} に到達。向き: ${result.direction}${redirectDetail}${paymentDetail}`,
   });
-  const currentPlayer = ctx.currentPlayer as PlayerId;
   if (!canPlaceTiles(G, currentPlayer)) {
     G.log.unshift({
       turn: ctx.turn,

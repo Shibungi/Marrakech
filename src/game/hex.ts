@@ -90,6 +90,13 @@ export function rotateCounterClockwise(dir: Direction): Direction {
 }
 
 /**
+ * 現在の向きから選べる前方 3 方向を返す。
+ */
+export function getForwardDirections(dir: Direction): Direction[] {
+  return [rotateCounterClockwise(dir), dir, rotateClockwise(dir)];
+}
+
+/**
  * 隣接マスへの方向を返す。
  * 隣接していない、または target が盤外の場合は null。
  */

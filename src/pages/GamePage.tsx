@@ -8,7 +8,7 @@ import { MarrakechGame } from "../game/MarrakechGame";
 import type { Direction, HexCoord, MarrakechState, PlayerId, TerrainType } from "../game/types";
 import { PLAYER_LABELS } from "../game/types";
 import assamTokenAsset from "../assets/assam-token.svg";
-import { directionFromNeighbor, formatHexCoord, getAllCells, getNeighbors } from "../game/hex";
+import { directionFromNeighbor, formatHexCoord, getAllCells, getForwardDirections, getNeighbors } from "../game/hex";
 import { getGameServerUrl } from "../network";
 import { getCell, sameHex, toBoardKey } from "../game/board";
 import { connectedComponentSummary } from "../game/payment";
@@ -46,6 +46,8 @@ const HOVER_TOOLTIP_PADDING = 10;
 const HOVER_TOOLTIP_CURSOR_OFFSET_X = HEX_SIZE * 0.62;
 const HOVER_TOOLTIP_CURSOR_OFFSET_Y = HEX_SIZE * 0.68;
 const TOOLTIP_PLAYER_IDS: readonly PlayerId[] = ["0", "1", "2"];
+const PLAYER_IDS: readonly PlayerId[] = ["0", "1", "2"];
+const TERRAIN_TYPES: readonly TerrainType[] = ["sea", "forest", "city"];
 
 function createHexPoints(radius: number): string {
   const halfWidth = (SQRT_3 * radius) / 2;
@@ -78,7 +80,7 @@ const ASSAM_ROTATION_BY_DIRECTION: Record<Direction, number> = {
 };
 
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
-  const { assam, coins, board, log } = G;
+  const { assam, coins, board, log, tiles } = G;
   const [selectedTerrain, setSelectedTerrain] = useState<TerrainType>("sea");
   const [hoveredHex, setHoveredHex] = useState<HoveredHex | null>(null);
   const boardSvgRef = useRef<SVGSVGElement | null>(null);
@@ -174,9 +176,17 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
     }
   };
 
+  const availableDirections = useMemo(
+    () => new Set(getForwardDirections(assam.direction)),
+    [assam.direction],
+  );
+
   const isDirectionCandidate = (coord: HexCoord) =>
     currentPhase === "chooseDirection" &&
-    directionFromNeighbor(assam.position, coord) !== null;
+    (() => {
+      const direction = directionFromNeighbor(assam.position, coord);
+      return direction !== null && availableDirections.has(direction);
+    })();
   const placementCandidates = useMemo(() => {
     if (currentPhase === "placeFirstTile") {
       return getNeighbors(assam.position);
@@ -240,15 +250,29 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
       <section className="panel">
         <p className="panel-title">Players</p>
         <div className="player-strip">
-          {(["0", "1", "2"] as PlayerId[]).map((id) => (
-            <article
-              className={`player-chip ${ctx.currentPlayer === id ? "active" : ""}`}
-              key={id}
-            >
-              <span>Player {PLAYER_LABELS[id]}</span>
-              <strong>💰 {coins[id]}</strong>
-            </article>
-          ))}
+          {PLAYER_IDS.map((id) => {
+            const playerTiles = tiles[id];
+
+            return (
+              <article
+                className={`player-chip ${ctx.currentPlayer === id ? "active" : ""}`}
+                key={id}
+              >
+                <div className="player-chip-header">
+                  <span>Player {PLAYER_LABELS[id]}</span>
+                  <strong>💰 {coins[id]}</strong>
+                </div>
+                <div className="player-terrain-stock">
+                  {TERRAIN_TYPES.map((terrain) => (
+                    <div className={`terrain-stock terrain-${terrain}`} key={terrain}>
+                      <span>{terrain}</span>
+                      <strong>{playerTiles[terrain]}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 

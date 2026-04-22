@@ -250,10 +250,55 @@ select {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.player-chip small {
+.player-chip {
+  display: grid;
+  gap: 12px;
+}
+
+.player-chip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.player-terrain-stock {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.terrain-stock {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 10, 10, 0.38);
+}
+
+.terrain-stock span {
   display: block;
-  margin-top: 8px;
-  color: var(--accent-strong);
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.terrain-stock strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.terrain-stock.terrain-sea {
+  border-color: rgba(70, 180, 255, 0.2);
+}
+
+.terrain-stock.terrain-forest {
+  border-color: rgba(137, 217, 74, 0.2);
+}
+
+.terrain-stock.terrain-city {
+  border-color: rgba(212, 216, 222, 0.2);
 }
 
 .player-chip.active {

@@ -7,6 +7,7 @@ import {
   oppositeDirection,
   rotateClockwise,
   rotateCounterClockwise,
+  getForwardDirections,
   directionFromNeighbor,
 } from "../game/hex";
 import type { HexCoord, Direction } from "../game/types";
@@ -205,6 +206,11 @@ describe("rotation", () => {
 
   it("NE → 反時計回り = NW", () => {
     expect(rotateCounterClockwise("NE")).toBe("NW");
+  });
+
+  it("前方 3 方向は現在向きと左右 1 段のみ", () => {
+    expect(getForwardDirections("NE")).toEqual(["NW", "NE", "E"]);
+    expect(getForwardDirections("SW")).toEqual(["SE", "SW", "W"]);
   });
 });
 

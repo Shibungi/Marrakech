@@ -80,4 +80,15 @@ describe("MarrakechGame phase flow (Phase 4)", () => {
     expect(client.getState()?.G.assam.direction).toBe("NE");
     expect(client.getState()?.G.log).toHaveLength(0);
   });
+
+  it("アッサムの後方 3 方向への向き変更は拒否される", () => {
+    const client = Client({ game: MarrakechGame, numPlayers: 3 });
+    client.start();
+
+    client.moves.chooseDirection({ q: -1, r: 1 });
+
+    expect(client.getState()?.G.turnPhase).toBe("chooseDirection");
+    expect(client.getState()?.G.assam.direction).toBe("NE");
+    expect(client.getState()?.G.log).toHaveLength(0);
+  });
 });
