@@ -1,0 +1,76 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringGrad" x1="120" y1="120" x2="390" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c52a05"/>
+      <stop offset="100%" stop-color="#eb6414"/>
+    </linearGradient>
+
+    <linearGradient id="arrowGrad" x1="320" y1="90" x2="430" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffb53d"/>
+      <stop offset="100%" stop-color="#f08a17"/>
+    </linearGradient>
+
+    <radialGradient id="centerGrad" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#f7ad35"/>
+      <stop offset="100%" stop-color="#eb8918"/>
+    </radialGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#7d1b00" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <polygon
+      points="306,112 432,50 399,186 356,166"
+      fill="url(#ringGrad)"
+      stroke="#a61f00"
+      stroke-width="8"
+      stroke-linejoin="round"/>
+
+    <polygon
+      points="322,118 412,76 390,166 356,151"
+      fill="url(#arrowGrad)"
+      stroke="#f6b24b"
+      stroke-width="4"
+      stroke-linejoin="round"/>
+
+    <circle cx="256" cy="256" r="166" fill="url(#ringGrad)" stroke="#a61f00" stroke-width="8"/>
+    <circle cx="256" cy="256" r="153" fill="#ec641a"/>
+    <circle cx="256" cy="256" r="137" fill="none" stroke="#bc3b10" stroke-width="3"/>
+
+    <g opacity="0.34" fill="#a22d11">
+      <circle cx="194" cy="145" r="11"/>
+      <circle cx="336" cy="177" r="14"/>
+      <circle cx="369" cy="299" r="10"/>
+      <circle cx="183" cy="368" r="12"/>
+      <circle cx="290" cy="383" r="8"/>
+      <circle cx="142" cy="281" r="5"/>
+      <circle cx="153" cy="206" r="5"/>
+      <circle cx="366" cy="248" r="4"/>
+      <circle cx="303" cy="128" r="8" opacity="0.35"/>
+    </g>
+
+    <g opacity="0.18" fill="#91240d">
+      <path d="M142 300 C150 288, 170 286, 183 300 C194 314, 188 340, 173 349 C158 357, 141 344, 138 328 C136 317, 136 307, 142 300Z"/>
+      <path d="M173 352 C190 346, 215 352, 228 366 C238 377, 235 394, 219 400 C201 406, 179 399, 168 384 C159 372, 160 357, 173 352Z"/>
+      <path d="M315 198 C323 188, 340 186, 350 197 C357 206, 355 221, 345 229 C334 237, 319 233, 312 221 C307 213, 308 204, 315 198Z"/>
+    </g>
+
+    <g opacity="0.24" fill="#ffb46a">
+      <circle cx="138" cy="223" r="5"/>
+      <circle cx="148" cy="274" r="4"/>
+      <circle cx="362" cy="327" r="6"/>
+      <circle cx="338" cy="360" r="5"/>
+      <circle cx="188" cy="126" r="4"/>
+      <circle cx="260" cy="132" r="3"/>
+    </g>
+
+    <circle cx="256" cy="256" r="109" fill="none" stroke="#ffd06a" stroke-width="18"/>
+    <circle cx="256" cy="256" r="101" fill="url(#centerGrad)" stroke="#d97b16" stroke-width="2"/>
+
+    <circle cx="256" cy="256" r="27" fill="#8e1805"/>
+    <circle cx="256" cy="256" r="20" fill="#ba2414"/>
+    <circle cx="256" cy="256" r="25" fill="none" stroke="#ff9450" stroke-width="3"/>
+  </g>
+</svg>
