@@ -1,7 +1,8 @@
 import { Client } from "boardgame.io/react";
 import { SocketIO } from "boardgame.io/multiplayer";
 import type { Ctx } from "boardgame.io";
-import { useMemo, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { MarrakechGame } from "../game/MarrakechGame";
 import type { Direction, HexCoord, MarrakechState, PlayerId, TerrainType } from "../game/types";
@@ -26,6 +27,10 @@ type GamePageProps = {
   playerID: string;
   credentials?: string;
 };
+type HoveredHex = {
+  coord: HexCoord;
+  pointer: { x: number; y: number };
+};
 
 const SERVER_URL = getGameServerUrl();
 const SQRT_3 = Math.sqrt(3);
@@ -38,8 +43,8 @@ const ASSAM_TOKEN_SIZE = 54;
 const HOVER_TOOLTIP_WIDTH = 164;
 const HOVER_TOOLTIP_HEIGHT = 96;
 const HOVER_TOOLTIP_PADDING = 10;
-const HOVER_TOOLTIP_OFFSET_X = HEX_WIDTH * 0.42;
-const HOVER_TOOLTIP_OFFSET_Y = HEX_SIZE * -1.45;
+const HOVER_TOOLTIP_CURSOR_OFFSET_X = HEX_SIZE * 0.62;
+const HOVER_TOOLTIP_CURSOR_OFFSET_Y = HEX_SIZE * 0.68;
 const TOOLTIP_PLAYER_IDS: readonly PlayerId[] = ["0", "1", "2"];
 
 function createHexPoints(radius: number): string {
@@ -75,7 +80,8 @@ const ASSAM_ROTATION_BY_DIRECTION: Record<Direction, number> = {
 function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
   const { assam, coins, board, log } = G;
   const [selectedTerrain, setSelectedTerrain] = useState<TerrainType>("sea");
-  const [hoveredCoord, setHoveredCoord] = useState<HexCoord | null>(null);
+  const [hoveredHex, setHoveredHex] = useState<HoveredHex | null>(null);
+  const boardSvgRef = useRef<SVGSVGElement | null>(null);
   const currentStage = ctx.activePlayers?.[ctx.currentPlayer];
   const currentPhase = currentStage ?? G.turnPhase;
   const assamRotation = ASSAM_ROTATION_BY_DIRECTION[assam.direction];
@@ -99,39 +105,61 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
       ownerMarkerOffsetY: HEX_SIZE * -0.56,
     };
   }, []);
-  const hoveredComponent = useMemo(() => {
-    if (hoveredCoord === null) {
+
+  const getPointerAnchor = (event: ReactMouseEvent<SVGGElement>): { x: number; y: number } | null => {
+    const svg = boardSvgRef.current;
+    const ctm = svg?.getScreenCTM();
+    if (!svg || !ctm) {
       return null;
     }
 
-    const hoveredCell = getCell(board, hoveredCoord);
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const transformed = point.matrixTransform(ctm.inverse());
+
+    return { x: transformed.x, y: transformed.y };
+  };
+
+  const updateHoveredHex = (coord: HexCoord, event: ReactMouseEvent<SVGGElement>) => {
+    setHoveredHex({
+      coord,
+      pointer: getPointerAnchor(event) ?? axialToPixel(coord),
+    });
+  };
+
+  const hoveredComponent = useMemo(() => {
+    if (hoveredHex === null) {
+      return null;
+    }
+
+    const hoveredCell = getCell(board, hoveredHex.coord);
     if (hoveredCell === null) {
       return null;
     }
 
-    const summary = connectedComponentSummary(board, hoveredCoord, hoveredCell);
-    const anchor = axialToPixel(hoveredCoord);
+    const summary = connectedComponentSummary(board, hoveredHex.coord, hoveredCell);
     const minX = boardLayout.minX + 8;
     const maxX = boardLayout.maxX - HOVER_TOOLTIP_WIDTH - 8;
     const minY = boardLayout.minY + 8;
     const maxY = boardLayout.maxY - HOVER_TOOLTIP_HEIGHT - 8;
-    const preferredX = anchor.x + HOVER_TOOLTIP_OFFSET_X;
-    const preferredY = anchor.y + HOVER_TOOLTIP_OFFSET_Y;
-    const fallbackY = anchor.y + HEX_SIZE * 0.72;
+    const rightX = hoveredHex.pointer.x + HOVER_TOOLTIP_CURSOR_OFFSET_X;
+    const leftX = hoveredHex.pointer.x - HOVER_TOOLTIP_WIDTH - HOVER_TOOLTIP_CURSOR_OFFSET_X;
+    const belowY = hoveredHex.pointer.y + HOVER_TOOLTIP_CURSOR_OFFSET_Y;
+    const aboveY = hoveredHex.pointer.y - HOVER_TOOLTIP_HEIGHT - HOVER_TOOLTIP_CURSOR_OFFSET_Y;
+    const preferredX = rightX <= maxX ? rightX : leftX;
+    const preferredY = belowY <= maxY ? belowY : aboveY;
 
     return {
-      coord: hoveredCoord,
+      coord: hoveredHex.coord,
       tile: hoveredCell,
       summary,
-      originKey: toBoardKey(hoveredCoord),
+      originKey: toBoardKey(hoveredHex.coord),
       componentKeys: new Set(summary.cells.map((cell) => toBoardKey(cell))),
       tooltipX: Math.min(Math.max(preferredX, minX), maxX),
-      tooltipY: Math.min(
-        Math.max(preferredY < minY ? fallbackY : preferredY, minY),
-        maxY,
-      ),
+      tooltipY: Math.min(Math.max(preferredY, minY), maxY),
     };
-  }, [board, boardLayout.maxX, boardLayout.maxY, boardLayout.minX, boardLayout.minY, hoveredCoord]);
+  }, [board, boardLayout.maxX, boardLayout.maxY, boardLayout.minX, boardLayout.minY, hoveredHex]);
 
   const phaseActionLabel: Record<string, string> = {
     chooseDirection: "隣接マスをクリックして向き変更",
@@ -250,6 +278,7 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
           <svg
             aria-label="Marrakech board"
             className="hex-board-svg"
+            ref={boardSvgRef}
             role="img"
             viewBox={boardLayout.viewBox}
           >
@@ -297,8 +326,22 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                   className={`hex-cell-group ${cell ? `terrain-${cell.terrain}` : "empty"} ${isAssam ? "assam" : ""} ${isClickable ? "clickable" : ""} ${isHoveredComponent ? "hover-component" : ""} ${isHoveredOrigin ? "hover-origin" : ""}`}
                   key={cellKey}
                   onClick={() => handleCellClick(coord, canChooseDirection, canPlaceTile)}
-                  onMouseEnter={() => setHoveredCoord(cell ? coord : null)}
-                  onMouseLeave={() => setHoveredCoord((current) => (current && sameHex(current, coord) ? null : current))}
+                  onMouseEnter={(event) => {
+                    if (!cell) {
+                      setHoveredHex(null);
+                      return;
+                    }
+
+                    updateHoveredHex(coord, event);
+                  }}
+                  onMouseLeave={() => setHoveredHex((current) => (current && sameHex(current.coord, coord) ? null : current))}
+                  onMouseMove={(event) => {
+                    if (!cell) {
+                      return;
+                    }
+
+                    updateHoveredHex(coord, event);
+                  }}
                   transform={`translate(${x} ${y})`}
                 >
                   <title>
@@ -320,12 +363,8 @@ function GameBoard({ G, ctx, isActive, playerID, matchID, moves }: BoardProps) {
                     </g>
                   )}
                   {isAssam && (
-                    <g className="hex-assam-token" transform={`translate(0 2) rotate(${assamRotation})`}>
+                    <g pointerEvents="none" transform={`translate(0 2) rotate(${assamRotation})`}>
                       <ellipse className="hex-assam-shadow" cy="4" rx="16.5" ry="11.5" />
-                      <path
-                        className="hex-assam-outline"
-                        d="M-17.5,-13.5 C-12.8,-21.8 -1.6,-25.8 10.1,-23.4 C18.3,-21.8 24.8,-16.6 28,-8.5 C25.2,2.5 14.8,10.1 2.6,10.7 C-7.8,11.3 -17.1,6.4 -21.2,-1.6 C-22.8,-4.8 -21.3,-9.5 -17.5,-13.5 Z"
-                      />
                       <image
                         className="hex-assam-image"
                         href={assamTokenAsset}

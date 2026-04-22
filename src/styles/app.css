@@ -337,8 +337,7 @@ select {
   cursor: default;
 }
 
-.hex-owner-badge,
-.hex-assam-token {
+.hex-owner-badge {
   pointer-events: none;
 }
 
@@ -541,18 +540,8 @@ select {
   font-weight: 600;
 }
 
-.hex-assam-token {
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.28));
-}
-
 .hex-assam-shadow {
   fill: rgba(36, 16, 10, 0.18);
-}
-
-.hex-assam-outline {
-  fill: rgba(255, 244, 225, 0.08);
-  stroke: rgba(255, 236, 204, 0.42);
-  stroke-width: 1.35;
 }
 
 .hex-assam-image {
