@@ -358,7 +358,12 @@ select {
 .hex-cell-sheen,
 .hex-owner-gem,
 .hex-assam-body,
-.hex-assam-visor {
+.hex-assam-face,
+.hex-assam-turban,
+.hex-assam-tail,
+.hex-assam-pointer,
+.hex-assam-visor,
+.hex-assam-smile {
   vector-effect: non-scaling-stroke;
 }
 
@@ -456,22 +461,66 @@ select {
   fill: rgba(36, 16, 10, 0.18);
 }
 
+.hex-assam-pointer {
+  fill: url(#assam-pointer-fill);
+  stroke: rgba(255, 244, 225, 0.7);
+  stroke-width: 1.1;
+}
+
 .hex-assam-body {
   fill: url(#assam-body-fill);
   stroke: rgba(255, 244, 230, 0.42);
   stroke-width: 1.6;
 }
 
+.hex-assam-face {
+  fill: #fff2e2;
+  stroke: rgba(118, 61, 32, 0.18);
+  stroke-width: 1.1;
+}
+
+.hex-assam-turban {
+  fill: url(#assam-turban-fill);
+  stroke: rgba(143, 68, 15, 0.56);
+  stroke-width: 1.1;
+}
+
+.hex-assam-tail {
+  fill: #ffe09d;
+  stroke: rgba(143, 68, 15, 0.52);
+  stroke-width: 1;
+}
+
+.hex-assam-cheek {
+  fill: rgba(255, 159, 128, 0.52);
+}
+
+.hex-assam-eye {
+  fill: #472112;
+}
+
+.hex-assam-eye-spark {
+  fill: rgba(255, 252, 246, 0.95);
+}
+
 .hex-assam-visor {
   fill: url(#assam-visor-fill);
-  stroke: rgba(255, 255, 255, 0.45);
+  stroke: rgba(255, 255, 255, 0.4);
   stroke-width: 1;
+}
+
+.hex-assam-smile {
+  fill: none;
+  stroke: rgba(124, 57, 24, 0.76);
+  stroke-linecap: round;
+  stroke-width: 1.3;
 }
 
 .hex-assam-label {
   font-size: 9px;
   font-weight: 700;
   fill: #fff8ee;
+  letter-spacing: 0.04em;
 }
 
 .log-list {
